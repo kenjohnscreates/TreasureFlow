@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TreasureFlow · Statement</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600&amp;family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --navy: #1a2744;
+        --ink: #1a2744;
+        --muted: #5d6578;
+        --line: #c9ced8;
+        --paper: #f4f5f7;
+        --sheet: #fbfbfc;
+        --brick: #9c3b2e;
+        --ok: #2c5a45;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font: 15px/1.5 "Public Sans", sans-serif;
+      }
+      a {
+        color: var(--navy);
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      .sheet {
+        max-width: 760px;
+        margin: 32px auto 64px;
+        background: var(--sheet);
+        border: 1px solid var(--line);
+        padding: 40px 48px 32px;
+      }
+      .mast {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        border-bottom: 2px solid var(--navy);
+        padding-bottom: 12px;
+        margin-bottom: 28px;
+      }
+      .mast h1 {
+        margin: 0;
+        font-family: "Source Serif 4", serif;
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+      .mast p {
+        margin: 0;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .who {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 24px;
+        font-size: 13px;
+        margin-bottom: 36px;
+      }
+      .who dt {
+        color: var(--muted);
+      }
+      .who dd {
+        margin: 0;
+      }
+      .hero {
+        text-align: center;
+        padding: 8px 0 28px;
+        border-bottom: 1px solid var(--line);
+      }
+      .hero .num {
+        font-family: "Source Serif 4", serif;
+        font-size: 56px;
+        font-weight: 500;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+      .hero small {
+        display: block;
+        margin-top: 8px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .thesis {
+        margin: 16px auto 0;
+        max-width: 46ch;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .books {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        margin: 0;
+      }
+      .books div {
+        padding: 20px 8px 20px 0;
+      }
+      .books div + div {
+        border-left: 1px solid var(--line);
+        padding-left: 24px;
+      }
+      .books dt {
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .books dd {
+        margin: 4px 0 0;
+        font-family: "Source Serif 4", serif;
+        font-size: 28px;
+        font-variant-numeric: tabular-nums;
+      }
+      .books .hint {
+        display: block;
+        margin-top: 6px;
+        font-family: "Public Sans", sans-serif;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      h2 {
+        font-size: 12px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin: 32px 0 10px;
+        color: var(--navy);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th {
+        text-align: left;
+        font-weight: 500;
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding-bottom: 6px;
+      }
+      td {
+        padding: 8px 8px 8px 0;
+        border-top: 1px solid var(--line);
+        font-variant-numeric: tabular-nums;
+      }
+      .wire {
+        margin-top: 28px;
+        padding-top: 20px;
+        border-top: 2px solid var(--navy);
+      }
+      #agent-log .msg {
+        margin-bottom: 12px;
+        font-size: 13px;
+      }
+      #agent-log .msg span {
+        display: block;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 2px;
+      }
+      #agent-log .msg p {
+        margin: 0;
+      }
+      form.composer {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      form.composer input {
+        flex: 1;
+        border: 0;
+        border-bottom: 1px solid var(--navy);
+        background: transparent;
+        padding: 8px 0;
+      }
+      form.composer input:focus {
+        outline: none;
+        border-bottom-width: 2px;
+      }
+      .btn {
+        background: var(--brick);
+        color: #fff;
+        border: 0;
+        padding: 10px 16px;
+        cursor: pointer;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-size: 12px;
+      }
+      .btn.ghost {
+        background: transparent;
+        color: var(--navy);
+        border: 1px solid var(--line);
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      footer {
+        margin-top: 36px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      footer ol {
+        padding-left: 18px;
+      }
+      footer li + li {
+        margin-top: 6px;
+      }
+      .switch {
+        text-align: right;
+        font-size: 12px;
+        margin-bottom: 16px;
+      }
+      @media (max-width: 700px) {
+        .sheet {
+          margin: 0;
+          border: 0;
+          padding: 24px 20px 40px;
+        }
+        .hero .num {
+          font-size: 40px;
+        }
+        .who,
+        .books,
+        .mast {
+          grid-template-columns: 1fr;
+          display: block;
+        }
+        .books div + div {
+          border-left: 0;
+          padding-left: 0;
+          border-top: 1px solid var(--line);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <article class="sheet">
+      <p class="switch">
+        <a href="operator.html">Operator</a> ·
+        <a href="terminal.html">Terminal</a> ·
+        <a href="index.html">Research</a>
+      </p>
+      <header class="mast">
+        <div>
+          <h1>TreasureFlow</h1>
+          <p>Treasury statement</p>
+        </div>
+        <p>16 September 2026</p>
+      </header>
+      <dl class="who">
+        <dt>Account</dt>
+        <dd>Northwind Labs</dd>
+        <dt>Wallet</dt>
+        <dd>Dynamic server · Base</dd>
+        <dt>Policy</dt>
+        <dd>Allowlist + maxPerCall in wallet. Daily cap in orchestrator.</dd>
+        <dt>Period</dt>
+        <dd>Nightly sweep 02:00 America/New_York</dd>
+      </dl>
+      <div class="hero">
+        <div class="num">186,420.00</div>
+        <small>USDC · own funds</small>
+        <p class="thesis">
+          One company's own USDC, run by an agent. Limits enforced before
+          signing.
+        </p>
+      </div>
+      <dl class="books">
+        <div>
+          <dt>Available to pay now</dt>
+          <dd id="liquid-now">1,200.00</dd>
+          <span class="hint">Buffer target 25,000. Currently under. Will not sweep.</span>
+        </div>
+        <div>
+          <dt>Working in the pool</dt>
+          <dd>185,220.00</dd>
+          <span class="hint"
+            >sAMM USDC/USDT. Trailing 7d fee yield 4.12%. Not a forecast.</span
+          >
+        </div>
+      </dl>
+      <h2>Standing limits</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Limit</th>
+            <th>Value</th>
+            <th>Enforced by</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Cash buffer</td>
+            <td>25,000 USDC</td>
+            <td>Orchestrator</td>
+          </tr>
+          <tr>
+            <td>Per-transaction cap</td>
+            <td>10,000 USDC</td>
+            <td>Dynamic wallet</td>
+          </tr>
+          <tr>
+            <td>Daily remaining</td>
+            <td>47,600 of 50,000</td>
+            <td>Orchestrator, rolling 24h</td>
+          </tr>
+        </tbody>
+      </table>
+      <h2>Counterparties on the allowlist</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Address</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Payroll</td>
+            <td>0xA11c...Pay1</td>
+          </tr>
+          <tr>
+            <td>Vendor</td>
+            <td>0xB0b0...Vend</td>
+          </tr>
+          <tr>
+            <td>Aerodrome Router and pool</td>
+            <td>0xcF77...4E43</td>
+          </tr>
+        </tbody>
+      </table>
+      <h2>Open buy orders · cbBTC</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Level</th>
+            <th>Limit USD</th>
+            <th>Size</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2% below spot</td>
+            <td>96,040</td>
+            <td>0.012</td>
+          </tr>
+          <tr>
+            <td>4% below spot</td>
+            <td>94,080</td>
+            <td>0.012</td>
+          </tr>
+          <tr>
+            <td>6% below spot</td>
+            <td>92,120</td>
+            <td>0.012</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="hint" style="margin-top: 8px; color: var(--muted); font-size: 12px">
+        Spot 98,000. Buys more on dips. No performance claim.
+      </p>
+      <section class="wire">
+        <h2>Instruction</h2>
+        <div id="agent-log">
+          <div class="msg agent">
+            <span>Last activity</span>
+            <p>
+              02:00 addLiquidity 0x7c3a...b4d0. Liquid is under the buffer, so
+              the next automatic sweep will not run until cash is restored.
+            </p>
+          </div>
+        </div>
+        <form class="composer" id="pay-form">
+          <input
+            id="pay-input"
+            value="send 2,400 USDC to 0xA11c00000000000000000000000000000000Pay1"
+            aria-label="Pay prompt"
+          />
+          <button class="btn" type="submit">Instruct</button>
+        </form>
+        <div class="row">
+          <button class="btn ghost" id="sweep-btn" type="button">
+            Request sweep
+          </button>
+          <button class="btn ghost" id="reject-btn" type="button">
+            Instruct 50,000
+          </button>
+        </div>
+      </section>
+      <footer>
+        <ol>
+          <li>
+            Daily cap is enforced in the orchestrator unless a wallet-level
+            rolling field is found. Demo states this out loud.
+          </li>
+          <li>
+            Stretch tier (tokenized-stock LP via Bankr aero-stock-lp) is not
+            executed on this US machine. That path would sign from a Bankr
+            wallet, which splits custody from the Dynamic policy.
+          </li>
+          <li>
+            Core position holds USDT in the stable pool. LP share is capped so
+            buffer plus 30% stays in USDC.
+          </li>
+        </ol>
+      </footer>
+    </article>
+    <script src="shared.js"></script>
+  </body>
+</html>

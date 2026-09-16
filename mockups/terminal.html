@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TreasureFlow · Terminal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0e0d0c;
+        --panel: #161412;
+        --ink: #e8e0d4;
+        --muted: #8a8072;
+        --line: #2c2924;
+        --amber: #c9a227;
+        --bad: #d36a5a;
+        --ok: #7a9a62;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 13px/1.4 "IBM Plex Sans", sans-serif;
+      }
+      a {
+        color: var(--amber);
+      }
+      button,
+      input {
+        font: inherit;
+        color: inherit;
+      }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--line);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .top b {
+        color: var(--amber);
+        font-weight: 500;
+      }
+      .ticker {
+        display: grid;
+        grid-template-columns: 1.4fr repeat(4, 1fr);
+        border-bottom: 1px solid var(--line);
+      }
+      .ticker div {
+        padding: 14px 16px;
+        border-right: 1px solid var(--line);
+      }
+      .ticker div:last-child {
+        border-right: 0;
+      }
+      .ticker label {
+        display: block;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .ticker strong {
+        display: block;
+        margin-top: 4px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 22px;
+        font-weight: 500;
+        color: var(--amber);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.03em;
+      }
+      .ticker .sub {
+        font-size: 11px;
+        color: var(--muted);
+        font-family: "IBM Plex Mono", monospace;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+      }
+      section {
+        padding: 16px 16px 8px;
+        border-right: 1px solid var(--line);
+        min-height: 280px;
+      }
+      section:last-of-type {
+        border-right: 0;
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 6px 8px 6px 0;
+        border-bottom: 1px solid var(--line);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 400;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .ok {
+        color: var(--ok);
+      }
+      .bad {
+        color: var(--bad);
+      }
+      .console {
+        border-top: 1px solid var(--line);
+        background: var(--panel);
+        min-height: 280px;
+        display: flex;
+        flex-direction: column;
+      }
+      .console header {
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--line);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+      }
+      #agent-log {
+        flex: 1;
+        overflow: auto;
+        padding: 12px 14px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+      }
+      .msg {
+        margin-bottom: 10px;
+      }
+      .msg span {
+        color: var(--amber);
+        margin-right: 8px;
+      }
+      .msg.you span {
+        color: var(--muted);
+      }
+      .msg p {
+        display: inline;
+        margin: 0;
+      }
+      form.composer {
+        display: flex;
+        border-top: 1px solid var(--line);
+      }
+      form.composer input {
+        flex: 1;
+        background: transparent;
+        border: 0;
+        padding: 12px 14px;
+        font-family: "IBM Plex Mono", monospace;
+      }
+      form.composer input:focus {
+        outline: none;
+        box-shadow: inset 0 0 0 1px var(--amber);
+      }
+      .btn {
+        background: var(--amber);
+        color: #0e0d0c;
+        border: 0;
+        padding: 0 16px;
+        cursor: pointer;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .ghost {
+        background: transparent;
+        color: var(--ink);
+        border-left: 1px solid var(--line);
+      }
+      .note {
+        padding: 10px 16px 18px;
+        color: var(--muted);
+        font-size: 12px;
+        max-width: 90ch;
+      }
+      @media (max-width: 900px) {
+        .ticker,
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .ticker div,
+        section {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+        .ticker strong {
+          font-size: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top">
+      <div>TreasureFlow <b>live</b> · Dynamic policy on · Base 8453</div>
+      <div>
+        <a href="operator.html">Operator</a> ·
+        <a href="statement.html">Statement</a> ·
+        <a href="index.html">Research</a>
+      </div>
+      <div>16 Sep 2026 · 02:14:08 America/New_York</div>
+    </div>
+    <div class="ticker">
+      <div>
+        <label>Treasury USDC</label>
+        <strong>186,420.00</strong>
+        <div class="sub">Northwind Labs · one company, own funds</div>
+      </div>
+      <div>
+        <label>Liquid / buffer</label>
+        <strong id="liquid-now">1,200.00</strong>
+        <div class="sub">Buffer 25,000 · orchestrator</div>
+      </div>
+      <div>
+        <label>Per-call</label>
+        <strong>10,000</strong>
+        <div class="sub">Dynamic maxPerCall</div>
+      </div>
+      <div>
+        <label>Daily left</label>
+        <strong>47,600</strong>
+        <div class="sub">Of 50,000 · orchestrator</div>
+      </div>
+      <div>
+        <label>Pool fee 7d</label>
+        <strong>4.12%</strong>
+        <div class="sub">Trailing. Not a forecast.</div>
+      </div>
+    </div>
+    <div class="grid">
+      <section>
+        <h1>Positions</h1>
+        <table>
+          <thead>
+            <tr>
+              <th>Book</th>
+              <th>Asset</th>
+              <th>Amount</th>
+              <th>Enforced</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Liquid</td>
+              <td>USDC</td>
+              <td>1,200.00</td>
+              <td>Buffer floor</td>
+            </tr>
+            <tr>
+              <td>sAMM</td>
+              <td>USDC/USDT</td>
+              <td>185,220.00</td>
+              <td>LP share cap 70%</td>
+            </tr>
+            <tr>
+              <td>Allow</td>
+              <td>Payroll 0xA11c...Pay1</td>
+              <td></td>
+              <td>Wallet</td>
+            </tr>
+            <tr>
+              <td>Allow</td>
+              <td>Vendor 0xB0b0...Vend</td>
+              <td></td>
+              <td>Wallet</td>
+            </tr>
+            <tr>
+              <td>Allow</td>
+              <td>Router 0xcF77...4E43</td>
+              <td></td>
+              <td>Wallet</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <section>
+        <h1>Flash · cbBTC ladder</h1>
+        <table>
+          <thead>
+            <tr>
+              <th>Rung</th>
+              <th>Limit</th>
+              <th>Qty</th>
+              <th>State</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>-2%</td>
+              <td>96,040</td>
+              <td>0.012</td>
+              <td class="ok">resting</td>
+            </tr>
+            <tr>
+              <td>-4%</td>
+              <td>94,080</td>
+              <td>0.012</td>
+              <td class="ok">resting</td>
+            </tr>
+            <tr>
+              <td>-6%</td>
+              <td>92,120</td>
+              <td>0.012</td>
+              <td class="ok">resting</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note" style="padding-left: 0">
+          Spot 98,000 Chainlink Base. Buys more on dips. No performance claim.
+        </p>
+      </section>
+    </div>
+    <div class="console">
+      <header>
+        <span>Prompt to pay · limits checked pre-sign</span>
+        <span>
+          <button class="btn ghost" id="sweep-btn" type="button">Sweep</button>
+          <button class="btn ghost" id="reject-btn" type="button">Reject 50k</button>
+        </span>
+      </header>
+      <div id="agent-log">
+        <div class="msg agent">
+          <span>tf&gt;</span>
+          <p>
+            Last 02:00 addLiquidity 0x7c3a...b4d0. Liquid now under buffer.
+            Nightly job will no-op until cash &gt; 25,000.
+          </p>
+        </div>
+      </div>
+      <form class="composer" id="pay-form">
+        <input
+          id="pay-input"
+          value="send 2,400 USDC to 0xA11c00000000000000000000000000000000Pay1"
+          aria-label="Pay prompt"
+        />
+        <button class="btn" type="submit">Enter</button>
+      </form>
+    </div>
+    <p class="note">
+      Stretch (narrated): aero-stock-lp would open from a Bankr wallet, not this
+      Dynamic wallet. Not executed on this US machine. Kill switch: deny-all
+      policy plus local pause.
+    </p>
+    <script src="shared.js"></script>
+  </body>
+</html>

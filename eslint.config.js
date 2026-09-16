@@ -3,7 +3,16 @@ import prettier from "eslint-config-prettier";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist/**", "node_modules/**", "docs/**", "scripts/**"] },
+  {
+    ignores: [
+      "dist/**",
+      "node_modules/**",
+      "docs/**",
+      "scripts/**",
+      "web/**",
+      "mockups/**",
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   prettier,

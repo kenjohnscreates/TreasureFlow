@@ -7,3 +7,6 @@ PRD.md
 BUILD-PLAN.md
 PUNCH-LIST.md
 .env.example
+mockups
+web/dist
+web/node_modules

@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TreasureFlow · Operator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #121417;
+        --muted: #5a6270;
+        --line: #d5d8de;
+        --bg: #f3f4f6;
+        --paper: #ffffff;
+        --ok: #1f6b4a;
+        --bad: #9b2c2c;
+        --fill: #121417;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 14px/1.4 "IBM Plex Sans", sans-serif;
+      }
+      a {
+        color: inherit;
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 28px;
+        border-bottom: 1px solid var(--line);
+        background: var(--paper);
+      }
+      .brand {
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+      nav {
+        display: flex;
+        gap: 18px;
+        color: var(--muted);
+      }
+      nav a[aria-current="page"] {
+        color: var(--ink);
+        font-weight: 500;
+      }
+      .meta {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .wrap {
+        display: grid;
+        grid-template-columns: 1.35fr 0.85fr;
+        min-height: calc(100vh - 49px);
+      }
+      .main {
+        padding: 28px 32px 48px;
+      }
+      .kicker {
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 6px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.03em;
+      }
+      .thesis {
+        margin: 8px 0 28px;
+        color: var(--muted);
+        max-width: 52ch;
+      }
+      .cash {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 42px;
+        font-weight: 500;
+        letter-spacing: -0.04em;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+      .cash small {
+        font-size: 16px;
+        color: var(--muted);
+        margin-left: 8px;
+      }
+      .split-legend {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin: 18px 0 28px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .split-legend b {
+        display: block;
+        color: var(--ink);
+        font-size: 16px;
+        font-weight: 500;
+        margin-top: 2px;
+      }
+      .limits {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border: 1px solid var(--line);
+        background: var(--paper);
+        margin-bottom: 28px;
+      }
+      .limits div {
+        padding: 14px 16px;
+      }
+      .limits div + div {
+        border-left: 1px solid var(--line);
+      }
+      .limits dt {
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .limits dd {
+        margin: 4px 0 0;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 16px;
+        font-variant-numeric: tabular-nums;
+      }
+      .limits .note {
+        display: block;
+        margin-top: 4px;
+        font-size: 11px;
+        color: var(--muted);
+        font-family: "IBM Plex Sans", sans-serif;
+        text-transform: none;
+        letter-spacing: 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th {
+        text-align: left;
+        font-weight: 500;
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 0 8px 8px 0;
+      }
+      td {
+        padding: 8px 12px 8px 0;
+        border-top: 1px solid var(--line);
+        font-variant-numeric: tabular-nums;
+      }
+      td.mono,
+      .mono {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+      }
+      h2 {
+        font-size: 13px;
+        font-weight: 600;
+        margin: 28px 0 10px;
+      }
+      .side {
+        border-left: 1px solid var(--line);
+        background: var(--paper);
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+      }
+      .side h2 {
+        margin: 0;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+      #agent-log {
+        flex: 1;
+        overflow: auto;
+        padding: 16px 18px;
+      }
+      .msg {
+        margin-bottom: 14px;
+      }
+      .msg span {
+        display: block;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      .msg p {
+        margin: 0;
+        font-size: 13px;
+      }
+      .msg.agent p {
+        color: var(--ink);
+      }
+      form.composer {
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+        border-top: 1px solid var(--line);
+      }
+      form.composer input {
+        flex: 1;
+        border: 1px solid var(--line);
+        padding: 10px 12px;
+        background: var(--bg);
+      }
+      form.composer input:focus {
+        outline: 2px solid var(--ink);
+        outline-offset: 1px;
+      }
+      .btn {
+        border: 0;
+        background: var(--fill);
+        color: #fff;
+        padding: 10px 14px;
+        cursor: pointer;
+      }
+      .btn.ghost {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        margin: 18px 0 0;
+      }
+      .foot {
+        margin-top: 32px;
+        font-size: 12px;
+        color: var(--muted);
+        max-width: 62ch;
+      }
+      .switch {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      @media (max-width: 900px) {
+        header {
+          flex-wrap: wrap;
+        }
+        .meta {
+          width: 100%;
+        }
+        .wrap {
+          grid-template-columns: 1fr;
+        }
+        .side {
+          border-left: 0;
+          border-top: 1px solid var(--line);
+          min-height: 420px;
+        }
+        .limits {
+          grid-template-columns: 1fr;
+        }
+        .limits div + div {
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+        .cash {
+          font-size: 32px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">TreasureFlow</div>
+      <nav>
+        <a href="operator.html" aria-current="page">Treasury</a>
+        <a href="index.html">Styles</a>
+      </nav>
+      <div class="meta">Dynamic · Base · Northwind Labs</div>
+    </header>
+    <div class="wrap">
+      <section class="main">
+        <p class="kicker">Founder view</p>
+        <h1>Treasury</h1>
+        <p class="thesis">
+          One company's own USDC, run by an agent. Limits enforced before
+          signing.
+        </p>
+        <div class="cash">186,420.00<small>USDC</small></div>
+        <div class="split-legend">
+          <span>Liquid USDC<b id="liquid-now">1,200.00</b></span>
+          <span>sAMM USDC/USDT<b>185,220.00</b></span>
+        </div>
+        <dl class="limits">
+          <div>
+            <dt>Cash buffer</dt>
+            <dd>25,000.00</dd>
+            <span class="note">Orchestrator. Never swept.</span>
+          </div>
+          <div>
+            <dt>Per-call cap</dt>
+            <dd>10,000.00</dd>
+            <span class="note">Dynamic maxPerCall on USDC.</span>
+          </div>
+          <div>
+            <dt>Daily remaining</dt>
+            <dd>47,600.00</dd>
+            <span class="note">Of 50,000. Orchestrator, rolling 24h.</span>
+          </div>
+        </dl>
+        <div class="actions">
+          <button class="btn" id="sweep-btn" type="button">Run sweep now</button>
+          <button class="btn ghost" id="reject-btn" type="button">
+            Try 50,000 reject
+          </button>
+        </div>
+        <h2>Allowlist</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th>Address</th>
+              <th>Where</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Payroll</td>
+              <td class="mono">0xA11c...Pay1</td>
+              <td>Wallet policy</td>
+            </tr>
+            <tr>
+              <td>Vendor</td>
+              <td class="mono">0xB0b0...Vend</td>
+              <td>Wallet policy</td>
+            </tr>
+            <tr>
+              <td>Aerodrome Router</td>
+              <td class="mono">0xcF77...4E43</td>
+              <td>Wallet policy</td>
+            </tr>
+            <tr>
+              <td>USDC · USDT · pool</td>
+              <td class="mono">Base contracts</td>
+              <td>Wallet policy</td>
+            </tr>
+          </tbody>
+        </table>
+        <h2>Flash ladder · cbBTC</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Offset</th>
+              <th>Limit</th>
+              <th>Size</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2% below spot</td>
+              <td class="mono">96,040</td>
+              <td class="mono">0.012</td>
+              <td>Resting</td>
+            </tr>
+            <tr>
+              <td>4% below spot</td>
+              <td class="mono">94,080</td>
+              <td class="mono">0.012</td>
+              <td>Resting</td>
+            </tr>
+            <tr>
+              <td>6% below spot</td>
+              <td class="mono">92,120</td>
+              <td class="mono">0.012</td>
+              <td>Resting</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="foot">
+          Oracle BTC/USD 98,000. Copy: buys more on dips. No performance claim.
+          Trailing 7d pool fee yield 4.12% (sAMM USDC/USDT). Not a forecast.
+          Stretch: tokenized-stock LP via Bankr is narrated only on this US
+          machine. That path signs from a Bankr wallet, not this Dynamic wallet.
+        </p>
+        <p class="switch">
+          <a href="terminal.html">Terminal</a> ·
+          <a href="statement.html">Statement</a> ·
+          <a href="index.html">Research</a>
+        </p>
+      </section>
+      <aside class="side">
+        <h2>Prompt to pay</h2>
+        <div id="agent-log">
+          <div class="msg agent">
+            <span>agent</span>
+            <p>
+              Last sweep 02:00 America/New_York. addLiquidity 0x7c3a...b4d0.
+              Liquid was already under buffer, so tonight’s job is a no-op until
+              cash is restored.
+            </p>
+          </div>
+        </div>
+        <form class="composer" id="pay-form">
+          <input
+            id="pay-input"
+            value="send 2,400 USDC to 0xA11c00000000000000000000000000000000Pay1"
+            aria-label="Pay prompt"
+          />
+          <button class="btn" type="submit">Send</button>
+        </form>
+      </aside>
+    </div>
+    <script src="shared.js"></script>
+  </body>
+</html>

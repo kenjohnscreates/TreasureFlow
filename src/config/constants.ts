@@ -2,11 +2,13 @@ import { type Address, parseUnits } from "viem";
 import { base, baseSepolia } from "viem/chains";
 
 export const USDC_DECIMALS = 6;
+export const NVDAC_DECIMALS = 8;
 
 export const BASE = {
   chainId: base.id,
   usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address,
   usdt: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2" as Address,
+  nvdac: "0xb20000000000000000000078ee7ce2fE4908108C" as Address,
   aerodromeRouter: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43" as Address,
   cbBtc: "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf" as Address,
   // Confirm on Chainlink Base feeds before M5 live orders.
@@ -32,6 +34,7 @@ export type AppConfig = {
   dynamicEnvironmentId: string;
   dynamicApiToken: string;
   dynamicWalletId: string;
+  treasuryAddress: Address | null;
   baseRpcUrl: string;
   baseSepoliaRpcUrl: string;
   xaiApiKey: string;

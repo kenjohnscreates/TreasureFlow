@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1920" />
+    <title>TreasureFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@400&amp;family=IBM+Plex+Sans:wght@400;500&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #05070a;
+        --panel: #0a0d12;
+        --ink: #f4f7fa;
+        --muted: #8b97a8;
+        --line: #1c2a33;
+        --cyan: #10cbff;
+        --cyan-dim: rgba(16, 203, 255, 0.14);
+        --bad: #ff6b6b;
+        --ok: #7dffb3;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: #000;
+        color: var(--ink);
+        font: 14px/1.4 "IBM Plex Sans", sans-serif;
+        overflow: hidden;
+        height: 100%;
+      }
+      .stage {
+        width: 1920px;
+        height: 1080px;
+        background:
+          radial-gradient(circle at 78% 42%, rgba(16, 203, 255, 0.07), transparent 42%),
+          linear-gradient(rgba(16, 203, 255, 0.045) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(16, 203, 255, 0.045) 1px, transparent 1px),
+          var(--bg);
+        background-size: auto, 56px 56px, 56px 56px, auto;
+        display: grid;
+        grid-template-rows: 64px 108px 1fr;
+        transform-origin: top left;
+      }
+      header {
+        display: grid;
+        grid-template-columns: 240px 1fr auto;
+        align-items: center;
+        padding: 0 28px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(5, 7, 10, 0.92);
+      }
+      header img {
+        display: block;
+        height: 28px;
+        width: auto;
+      }
+      nav {
+        display: flex;
+        justify-content: center;
+        gap: 28px;
+        font-size: 13px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      nav a {
+        color: inherit;
+        text-decoration: none;
+      }
+      nav a[aria-current="page"] {
+        color: var(--ink);
+      }
+      nav a.off {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+      .head-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        background: var(--cyan);
+        border-radius: 50%;
+      }
+      .btn {
+        border: 0;
+        background: var(--cyan);
+        color: #041018;
+        padding: 9px 16px;
+        border-radius: 999px;
+        font: 500 13px "IBM Plex Sans", sans-serif;
+        cursor: pointer;
+      }
+      .btn.ghost {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+      .wallets {
+        display: grid;
+        grid-template-columns: 1.35fr 0.85fr;
+        gap: 16px;
+        padding: 16px 28px 0;
+      }
+      .wallet {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        padding: 16px 20px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px 24px;
+        position: relative;
+      }
+      .wallet.primary {
+        border-color: var(--cyan);
+      }
+      .wallet .tag {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--cyan);
+      }
+      .wallet.secondary .tag {
+        color: var(--muted);
+      }
+      .wallet h2 {
+        margin: 0;
+        font-family: "Funnel Display", sans-serif;
+        font-size: 22px;
+        font-weight: 400;
+      }
+      .wallet .addr {
+        grid-column: 1 / -1;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .wallet aside {
+        text-align: right;
+        font-family: "IBM Plex Mono", monospace;
+        font-variant-numeric: tabular-nums;
+      }
+      .wallet aside b {
+        display: block;
+        font-size: 20px;
+        font-weight: 500;
+      }
+      .wallet aside span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .note {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      main {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        min-height: 0;
+        padding: 16px 28px 24px;
+        gap: 16px;
+      }
+      .col {
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .panel {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        padding: 18px 20px;
+      }
+      .panel h3 {
+        margin: 0 0 12px;
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .cash {
+        font-family: "Funnel Display", sans-serif;
+        font-size: 52px;
+        letter-spacing: -0.03em;
+        line-height: 1;
+      }
+      .cash small {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 14px;
+        color: var(--muted);
+        margin-left: 10px;
+      }
+      .thesis {
+        margin: 8px 0 0;
+        color: var(--muted);
+        max-width: 56ch;
+      }
+      .limits {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        margin-top: 18px;
+        border-top: 1px solid var(--line);
+      }
+      .limits div {
+        padding: 14px 16px 0 0;
+      }
+      .limits dt {
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .limits dd {
+        margin: 4px 0 0;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 18px;
+        font-variant-numeric: tabular-nums;
+      }
+      .limits .sub {
+        display: block;
+        margin-top: 4px;
+        font-size: 11px;
+        color: var(--muted);
+        font-family: "IBM Plex Sans", sans-serif;
+        text-transform: none;
+        letter-spacing: 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th {
+        text-align: left;
+        font-weight: 500;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        padding-bottom: 8px;
+      }
+      td {
+        padding: 8px 10px 8px 0;
+        border-top: 1px solid var(--line);
+        font-variant-numeric: tabular-nums;
+      }
+      .mono {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+      }
+      .ok {
+        color: var(--ok);
+      }
+      .bad {
+        color: var(--bad);
+      }
+      .lend {
+        opacity: 0.55;
+        position: relative;
+      }
+      .lend .lock {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(5, 7, 10, 0.55);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--cyan);
+      }
+      .chat {
+        border: 1px solid var(--cyan);
+        background: var(--panel);
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        position: relative;
+      }
+      .chat:before {
+        content: "";
+        position: absolute;
+        right: -80px;
+        top: 40px;
+        width: 280px;
+        height: 280px;
+        border: 1px solid rgba(16, 203, 255, 0.18);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+      .chat:after {
+        content: "";
+        position: absolute;
+        right: -20px;
+        top: 100px;
+        width: 160px;
+        height: 160px;
+        border: 1px solid rgba(16, 203, 255, 0.28);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+      .chat h3 {
+        margin: 0;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--line);
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--cyan);
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px 18px 0;
+      }
+      .chips button {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+        padding: 6px 10px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+        cursor: pointer;
+      }
+      #agent-log {
+        flex: 1;
+        overflow: auto;
+        padding: 14px 18px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+      }
+      .msg {
+        margin-bottom: 12px;
+      }
+      .msg span {
+        display: block;
+        color: var(--cyan);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+      }
+      .msg.you span {
+        color: var(--muted);
+      }
+      .msg p {
+        margin: 0;
+      }
+      form.composer {
+        display: flex;
+        border-top: 1px solid var(--line);
+      }
+      form.composer input {
+        flex: 1;
+        background: transparent;
+        border: 0;
+        color: var(--ink);
+        padding: 14px 16px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 13px;
+      }
+      form.composer input:focus {
+        outline: none;
+      }
+      form.composer button {
+        border-radius: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage" id="stage">
+      <header>
+        <img src="logo.svg" alt="TreasureFlow" />
+        <nav>
+          <a href="dapp.html" aria-current="page">Treasury</a>
+          <a href="dapp.html">Agent</a>
+          <a class="off" href="#" aria-disabled="true">Lend</a>
+        </nav>
+        <div class="head-right">
+          <span class="dot" aria-hidden="true"></span>
+          Base 8453
+          <button class="btn" type="button">Connected</button>
+        </div>
+      </header>
+      <section class="wallets">
+        <div class="wallet primary">
+          <div>
+            <div class="tag">Treasury · Dynamic server</div>
+            <h2>Northwind Labs</h2>
+          </div>
+          <aside>
+            <b>55.00 USDC</b>
+            <span>Agent signs inside policy</span>
+          </aside>
+          <div class="addr">0x3a91…b4d0 · one company, own funds</div>
+        </div>
+        <div class="wallet secondary">
+          <div>
+            <div class="tag">External rewards · secondary</div>
+            <h2>Founder wallet</h2>
+          </div>
+          <aside>
+            <b>Manual sign</b>
+            <span>Agent cannot spend this</span>
+          </aside>
+          <div class="addr">0x4e21…c8f1 · deposits USDC / NVDAc into treasury</div>
+        </div>
+      </section>
+      <main>
+        <div class="col">
+          <section class="panel">
+            <h3>Idle cash</h3>
+            <div class="cash">55.00<small>USDC liquid</small></div>
+            <p class="thesis">
+              One company's own USDC. Limits enforced before signing. Nightly
+              sweep is sAMM USDC/USDT only.
+            </p>
+            <dl class="limits">
+              <div>
+                <dt>Cash buffer</dt>
+                <dd>15.00</dd>
+                <span class="sub">Orchestrator. Never swept.</span>
+              </div>
+              <div>
+                <dt>Per-call cap</dt>
+                <dd>10.00</dd>
+                <span class="sub">Dynamic maxPerCall</span>
+              </div>
+              <div>
+                <dt>Daily remaining</dt>
+                <dd>30.00</dd>
+                <span class="sub">Of 30. Orchestrator, rolling 24h.</span>
+              </div>
+            </dl>
+          </section>
+          <section class="panel" style="flex: 1">
+            <h3>Positions</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Book</th>
+                  <th>Asset</th>
+                  <th>Amount</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Liquid</td>
+                  <td>USDC</td>
+                  <td class="mono" id="liquid-now">55.00</td>
+                  <td>Above buffer 15. Ready to sweep.</td>
+                </tr>
+                <tr>
+                  <td>Held</td>
+                  <td>USDT</td>
+                  <td class="mono">40.00</td>
+                  <td>Stable-pool other leg</td>
+                </tr>
+                <tr>
+                  <td>Held</td>
+                  <td>NVDAc</td>
+                  <td class="mono">0.0400</td>
+                  <td>Waits on explicit lp stocks</td>
+                </tr>
+                <tr>
+                  <td>sAMM</td>
+                  <td>USDC/USDT</td>
+                  <td class="mono">0.00</td>
+                  <td>Fee yield trailing, not a forecast</td>
+                </tr>
+                <tr>
+                  <td>Slipstream</td>
+                  <td>NVDAc/USDC</td>
+                  <td class="mono">0.00</td>
+                  <td>Not the nightly sweep</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+          <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 16px">
+            <section class="panel">
+              <h3>Flash · cbBTC ladder</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rung</th>
+                    <th>Limit</th>
+                    <th>Qty</th>
+                    <th>State</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>2% below</td>
+                    <td class="mono">96,040</td>
+                    <td class="mono">0.00012</td>
+                    <td class="ok">resting</td>
+                  </tr>
+                  <tr>
+                    <td>4% below</td>
+                    <td class="mono">94,080</td>
+                    <td class="mono">0.00012</td>
+                    <td class="ok">resting</td>
+                  </tr>
+                  <tr>
+                    <td>6% below</td>
+                    <td class="mono">92,120</td>
+                    <td class="mono">0.00012</td>
+                    <td class="ok">resting</td>
+                  </tr>
+                </tbody>
+              </table>
+              <p class="note" style="margin: 10px 0 0">
+                Buys more on dips. No performance claim. Spot 98,000 Chainlink Base.
+              </p>
+            </section>
+            <section class="panel lend">
+              <h3>Lend / borrow</h3>
+              <p class="note">Morpho-style panel. Not live in v1.</p>
+              <div class="lock">Disabled · mock</div>
+            </section>
+          </div>
+        </div>
+        <aside class="chat">
+          <h3>// Agent</h3>
+          <div class="chips">
+            <button type="button" data-prompt="deposit 20 USDC">deposit 20 USDC</button>
+            <button type="button" data-prompt="sweep">sweep</button>
+            <button type="button" data-prompt="lp stocks">lp stocks</button>
+            <button type="button" data-prompt="send 8 USDC to 0x000000000000000000000000000000000000dEaD">
+              send 8
+            </button>
+            <button type="button" data-prompt="send 50 USDC to 0x000000000000000000000000000000000000dEaD">
+              send 50
+            </button>
+          </div>
+          <div id="agent-log">
+            <div class="msg agent">
+              <span>tf</span>
+              <p>
+                Connected. External wallet is secondary. I can plan deposits for
+                your signature and I can sweep, LP, pay, and place limits from
+                the Dynamic treasury. I cannot spend the external wallet.
+              </p>
+            </div>
+          </div>
+          <form class="composer" id="pay-form">
+            <input id="pay-input" value="sweep" aria-label="Agent prompt" />
+            <button class="btn" type="submit">Enter</button>
+          </form>
+        </aside>
+      </main>
+    </div>
+    <script>
+      const stage = document.getElementById("stage");
+      function fit() {
+        const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+        stage.style.transform = "scale(" + s + ")";
+      }
+      fit();
+      addEventListener("resize", fit);
+
+      const log = document.getElementById("agent-log");
+      const form = document.getElementById("pay-form");
+      const input = document.getElementById("pay-input");
+      const liquid = document.getElementById("liquid-now");
+
+      function line(role, text) {
+        const el = document.createElement("div");
+        el.className = "msg " + role;
+        el.innerHTML = "<span>" + role + "</span><p>" + text + "</p>";
+        log.appendChild(el);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      function reply(prompt) {
+        const p = prompt.trim();
+        line("you", p);
+        if (/deposit/i.test(p)) {
+          line(
+            "agent",
+            "Unsigned ERC-20 transfer to treasury 0x3a91…b4d0. Sign in the connected wallet. Agent does not broadcast this.",
+          );
+          return;
+        }
+        if (/^sweep/i.test(p)) {
+          line(
+            "agent",
+            "Idle USDC 55.00 minus buffer 15.00 = 40.00 into sAMM USDC/USDT. addLiquidity 0x7c3a…b4d0. Stock pools are not in this job.",
+          );
+          liquid.textContent = "15.00";
+          return;
+        }
+        if (/lp/i.test(p)) {
+          line(
+            "agent",
+            "Slipstream NVDAc/USDC from treasury. Both legs must already sit here. Signed by Dynamic, not Bankr. Encoded mint shown if the pool reverts.",
+          );
+          return;
+        }
+        if (/50/.test(p)) {
+          line(
+            "agent",
+            "Rejected before signing. 50 USDC is over the 10 USDC per-call cap. Dynamic policy. Nothing moved.",
+          );
+          return;
+        }
+        if (/send/i.test(p)) {
+          line(
+            "agent",
+            "Allowlisted. Under per-call and daily cap. transfer 0x9e80…6e5a. If liquid is short, unwind only the shortfall from the stable pool.",
+          );
+          return;
+        }
+        line("agent", "Unknown intent. Try deposit, sweep, lp stocks, send N USDC to 0x…, or limits.");
+      }
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const v = input.value.trim();
+        if (!v) return;
+        reply(v);
+        input.value = "";
+      });
+      document.querySelectorAll(".chips button").forEach((b) => {
+        b.addEventListener("click", () => {
+          input.value = b.getAttribute("data-prompt");
+          form.requestSubmit();
+        });
+      });
+    </script>
+  </body>
+</html>

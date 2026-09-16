@@ -1,5 +1,5 @@
 import { config as loadDotenv } from "dotenv";
-import { type Address, isAddress } from "viem";
+import { type Address, getAddress, isAddress } from "viem";
 import { AppError } from "../errors.ts";
 import { type AppConfig, usdc } from "./constants.ts";
 
@@ -24,7 +24,15 @@ function dest(value: string): Address | undefined {
   if (!isAddress(value)) {
     throw new AppError("bad_address", `PAY_DEST is not an address: ${value}`);
   }
-  return value;
+  return getAddress(value);
+}
+
+function treasury(value: string): Address | null {
+  if (!value) return null;
+  if (!isAddress(value)) {
+    throw new AppError("bad_address", `TREASURY_ADDRESS is not an address: ${value}`);
+  }
+  return getAddress(value);
 }
 
 export function loadConfig(envPath = ".env"): AppConfig {
@@ -39,6 +47,7 @@ export function loadConfig(envPath = ".env"): AppConfig {
     dynamicEnvironmentId: env("DYNAMIC_ENVIRONMENT_ID"),
     dynamicApiToken: env("DYNAMIC_API_TOKEN"),
     dynamicWalletId: env("DYNAMIC_WALLET_ID"),
+    treasuryAddress: treasury(env("TREASURY_ADDRESS")),
     baseRpcUrl: env("BASE_RPC_URL"),
     baseSepoliaRpcUrl: env("BASE_SEPOLIA_RPC_URL"),
     xaiApiKey: env("XAI_API_KEY"),

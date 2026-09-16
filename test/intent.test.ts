@@ -1,6 +1,11 @@
 import { getAddress } from "viem";
 import { describe, expect, it } from "vitest";
 import { parseIntent, assertAllowlisted } from "../src/chat/intent.ts";
+import { handleChat } from "../src/chat/handle.ts";
+import { encodeTransfer } from "../src/aerodrome/encode.ts";
+import { loadConfig } from "../src/config/load.ts";
+import { BASE } from "../src/config/constants.ts";
+import { coreAllowlist } from "../src/policy/allowlist.ts";
 import { AppError } from "../src/errors.ts";
 
 const dest = getAddress("0x000000000000000000000000000000000000dEaD");
@@ -24,10 +29,72 @@ describe("parseIntent", () => {
   it("returns unknown for chatter", () => {
     expect(parseIntent("what is the buffer?").kind).toBe("unknown");
   });
+
+  it("parses deposit USDC and NVDAc (8 decimals)", () => {
+    const usdc = parseIntent("deposit 8 USDC");
+    expect(usdc.kind).toBe("deposit");
+    if (usdc.kind === "deposit") {
+      expect(usdc.token).toBe("USDC");
+      expect(usdc.amount).toBe(8_000_000n);
+    }
+    const nvda = parseIntent("deposit 1.5 NVDAc");
+    expect(nvda.kind).toBe("deposit");
+    if (nvda.kind === "deposit") {
+      expect(nvda.token).toBe("NVDAc");
+      expect(nvda.amount).toBe(150_000_000n);
+    }
+  });
+
+  it("parses sweep, lp stocks, and limits", () => {
+    expect(parseIntent("sweep").kind).toBe("sweep");
+    expect(parseIntent("lp").kind).toBe("lp_stocks");
+    expect(parseIntent("lp stocks").kind).toBe("lp_stocks");
+    expect(parseIntent("lp NVDAc").kind).toBe("lp_stocks");
+    expect(parseIntent("limits").kind).toBe("limits");
+    expect(parseIntent("ladder").kind).toBe("limits");
+  });
 });
 
 describe("allowlist", () => {
   it("rejects unknown destinations", () => {
     expect(() => assertAllowlisted(dest, [])).toThrow(AppError);
+  });
+
+  it("includes NVDAc", () => {
+    expect(coreAllowlist()).toContain(BASE.nvdac);
+  });
+});
+
+describe("handleChat", () => {
+  it("encodes deposit unsigned tx for the user wallet", () => {
+    const config = { ...loadConfig(), treasuryAddress: dest };
+    const reply = handleChat("deposit 8 USDC", config);
+    expect(reply.kind).toBe("deposit");
+    expect(reply.unsignedTx?.chainId).toBe(8453);
+    expect(reply.unsignedTx?.to).toBe(BASE.usdc);
+    expect(reply.unsignedTx?.value).toBe("0x0");
+    expect(reply.unsignedTx?.data).toBe(encodeTransfer(dest, 8_000_000n));
+  });
+
+  it("refuses deposit without treasury", () => {
+    const config = { ...loadConfig(), treasuryAddress: null };
+    expect(() => handleChat("deposit 1 NVDAc", config)).toThrow(AppError);
+    try {
+      handleChat("deposit 1 NVDAc", config);
+    } catch (err) {
+      expect(err).toBeInstanceOf(AppError);
+      if (err instanceof AppError) expect(err.code).toBe("missing_treasury");
+    }
+  });
+
+  it("returns unwired lp stocks and dry sweep/limits", () => {
+    const config = loadConfig();
+    const lp = handleChat("lp stocks", config);
+    expect(lp.plan.action).toBe("lp_stocks_unwired");
+    const sweep = handleChat("sweep", config);
+    expect(sweep.kind).toBe("sweep");
+    expect(sweep.plan.action).toBe("add_liquidity");
+    const limits = handleChat("limits", config);
+    expect(limits.plan.action).toBe("limits");
   });
 });

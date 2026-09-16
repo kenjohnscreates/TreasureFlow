@@ -1,9 +1,10 @@
 # Docs index
 
-Fetched for TreasureFlow / Runtime NYC. Count: 61.
+Fetched for TreasureFlow / Runtime NYC. Count: 62.
 
 | File | Source | Fetched | Bytes |
 |---|---|---|---|
+| `geo.md` | first-party (VPN / B20 / Bankr geo notes) | 2026-09-16 | 2021 |
 | `aerodrome/Router.sol` | https://raw.githubusercontent.com/aerodrome-finance/contracts/main/contracts/Router.sol | 2026-09-16 | 32103 |
 | `aerodrome/SPECIFICATION.md` | https://raw.githubusercontent.com/aerodrome-finance/contracts/main/SPECIFICATION.md | 2026-09-16 | 16238 |
 | `aerodrome/base-aerodrome-plugin.md` | https://docs.base.org/agents/plugins/native/aerodrome.md | 2026-09-16 | 1777 |

@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TreasureFlow mockups</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #121417;
+        --muted: #5c6370;
+        --line: #d7dbe2;
+        --bg: #f3f5f8;
+        --paper: #fff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font: 16px/1.45 "IBM Plex Sans", sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+      }
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 48px 24px 80px;
+      }
+      h1 {
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        margin: 0 0 8px;
+      }
+      .lede {
+        color: var(--muted);
+        margin: 0 0 32px;
+        max-width: 62ch;
+      }
+      h2 {
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin: 40px 0 12px;
+      }
+      p,
+      li {
+        color: var(--ink);
+      }
+      ul {
+        padding-left: 18px;
+      }
+      li + li {
+        margin-top: 6px;
+      }
+      a {
+        color: var(--ink);
+      }
+      .styles {
+        display: grid;
+        gap: 12px;
+      }
+      .styles a {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 16px;
+        align-items: start;
+        padding: 16px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        text-decoration: none;
+      }
+      .styles strong {
+        display: block;
+        font-size: 16px;
+      }
+      .styles span {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .swatch {
+        height: 72px;
+        border: 1px solid var(--line);
+      }
+      .swatch.op {
+        background: #f3f4f6;
+        border-top: 10px solid #121417;
+      }
+      .swatch.term {
+        background: #0e0d0c;
+        border: 1px solid #c9a227;
+      }
+      .swatch.stmt {
+        background: #e8eaee;
+        border-top: 18px solid #1a2744;
+      }
+      .cite {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .cite a {
+        color: var(--muted);
+      }
+      code {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>TreasureFlow mockups</h1>
+      <p class="lede">
+        Chosen direction is the dark dApp at 1920 x 1080 (Source / DefraDB
+        language plus the TreasureFlow mark). Older Operator / Terminal /
+        Statement variants are archived below.
+      </p>
+      <p class="lede">
+        <a href="dapp.html"><strong>Open dApp mock</strong></a>
+      </p>
+
+      <h2>Older style studies</h2>
+      <div class="styles">
+        <a href="operator.html">
+          <div class="swatch op" aria-hidden="true"></div>
+          <div>
+            <strong>Operator</strong>
+            <span
+              >Light SaaS. Mercury cash hierarchy plus Morpho tables. IBM Plex.
+              Black buttons. Hairlines, no cards stacked in cards.</span
+            >
+          </div>
+        </a>
+        <a href="terminal.html">
+          <div class="swatch term" aria-hidden="true"></div>
+          <div>
+            <strong>Terminal</strong>
+            <span
+              >Warm dark, amber figures. Aave density without the violet glow.
+              Command line for prompt-to-pay. Zero radius.</span
+            >
+          </div>
+        </a>
+        <a href="statement.html">
+          <div class="swatch stmt" aria-hidden="true"></div>
+          <div>
+            <strong>Statement</strong>
+            <span
+              >Cool paper, navy type, brick send. Private-bank letterhead. Wise
+              transparency: fees and caps visible before the action.</span
+            >
+          </div>
+        </a>
+      </div>
+
+      <h2>What site builders dislike about LLM UI</h2>
+      <ul>
+        <li>
+          Homogeneity, not broken CSS. Models complete <code>blue-500</code> and
+          Inter. Sailop’s 2026 scan of ~1,000 AI sites: generic scores rose over
+          six months, worst in color and type.
+        </li>
+        <li>
+          The starter pack: purple/indigo gradients, Inter/Geist, centered hero,
+          three identical rounded cards, glass/glow, gradient text on metrics,
+          <code>transition-all duration-300</code>, nested cards, thick colored
+          side borders.
+        </li>
+        <li>
+          2026 “tasteful” reset is also a tell: cream ground, sage accent,
+          Instrument Serif / Fraunces. Swapping purple for Anthropic house style
+          is not a direction.
+        </li>
+        <li>
+          Layout by template (nav, hero, features, testimonials, CTA) instead of
+          by job. Fake metrics and testimonials. Weak hierarchy. No real
+          conversion mechanics.
+        </li>
+        <li>
+          Cardocalypse, giant Lucide icons, Japanese-style redundant UX writing,
+          accessibility misses (contrast, focus).
+        </li>
+      </ul>
+      <p class="cite">
+        Sources:
+        <a href="https://sailop.com/blog/what-is-ai-slop-7-dimensions-of-generic-design"
+          >Sailop 7 dimensions</a
+        >,
+        <a href="https://sailop.com/blog/state-of-ai-web-design-2026">2026 scan</a>,
+        <a href="https://impeccable.style/slop">Impeccable slop</a>,
+        <a href="https://www.claudecodehq.com/playbooks/unslop-ui">Unslop UI</a>,
+        Paul Bakaus slop tells.
+      </p>
+
+      <h2>What we borrowed from live products</h2>
+      <ul>
+        <li>
+          <strong>Mercury.</strong> Total cash first, accounts under it, settings
+          that read as software not a bank. Light canvas. Color only for state.
+        </li>
+        <li>
+          <strong>Morpho app.</strong> Gray ground, white rows, rate on the right,
+          filters as text not icon candy. Calm DeFi, not neon.
+        </li>
+        <li>
+          <strong>Aave app.</strong> Dark chrome, dense numerals, a sheet of
+          positions. We kept density, dropped the violet CTA.
+        </li>
+        <li>
+          <strong>Wise / Stripe (from design writeups).</strong> Show the number
+          a competitor would hide. Fees, caps, and rejection reasons before
+          commit. Tables over sparkline decoration.
+        </li>
+      </ul>
+
+      <h2>PRD on every mock</h2>
+      <ul>
+        <li>0:00 Founder view: balance, buffer, caps, allowlist. One-company USDC. Limits before signing.</li>
+        <li>0:40 Manual sweep. addLiquidity hash or “below buffer, no sweep”.</li>
+        <li>1:40 “send 2,400 USDC to 0x...”. Shortfall, removeLiquidity, transfer.</li>
+        <li>2:40 “send 50,000”. Policy reject. Nothing moved.</li>
+        <li>3:20 Three Flash cbBTC limits at 2 / 4 / 6 percent below spot. No performance claim.</li>
+        <li>4:10 Stretch narrated. US machine. Bankr custody split labeled.</li>
+        <li>Copy: trailing fee yield only. Daily cap called out as orchestrator. No em dashes.</li>
+      </ul>
+    </main>
+  </body>
+</html>

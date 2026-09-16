@@ -4,6 +4,7 @@ import { USDC_DECIMALS } from "../config/constants.ts";
 import { log } from "../log.ts";
 import { planSweep } from "./plan.ts";
 import type { TreasurySnapshot } from "../policy/math.ts";
+import { AppError } from "../errors.ts";
 
 function argFlag(name: string): boolean {
   return process.argv.includes(name);
@@ -30,7 +31,10 @@ export async function runSweepCli(): Promise<void> {
     depositUsdc: formatUnits(plan.depositUsdc, USDC_DECIMALS),
   });
   if (plan.action === "add_liquidity" && !dry) {
-    throw new Error("Live addLiquidity is disabled until Dynamic keys are in .env");
+    throw new AppError(
+      "aerodrome_unwired",
+      "Live addLiquidity is disabled until Dynamic keys are in .env",
+    );
   }
 }
 
