@@ -1,0 +1,163 @@
+﻿Start here
+Runtime Agent Week
+Hacker Runbook
+Hey everyone, welcome to Runtime. Looking forward to seeing what you build!
+I’ve put the schedule and track details below. If you get stuck, come find us in Discord.
+Start here
+Registration  ·  Event calendar
+Build week: Sep 13, 2026–Sep 18, 2026. We’ll keep building on Demo Day, Sep 19, 2026, before the demos. 
+Choose In Person - NYC or Online Only on Luma, depending on how you’re joining us. Both require approval and compete under the same rules for the same prizes. If you’re coming to watch the demos, grab a Demo night only ticket.
+* Registration stays open on a rolling basis. Your Luma ticket needs approval before you join the hackathon. Apply separately for the side events you’d like to attend.
+* Come say hi in the Runtime Discord and meet the other builders.
+* You can enter the same project in multiple sponsor tracks and win the Bankr main prize plus sponsor prizes.
+The week ahead
+All times are New York time, EDT (UTC−4). Side events have separate applications and capacity limits. Check each event page for approval; a Demo Day ticket does not guarantee entry.
+Monday Sep 14, 2026 · 5:00–8:00 PM · Runtime Opening Ceremony. Come meet the other builders and sponsors as we kick off the week.
+Tuesday Sep 15, 2026 · 4:00–7:00 PM · Strobe Padel, cohosted with Sky. Come play, even if you’re new to padel, or just hang out.
+Wednesday Sep 16, 2026 · 1:00–5:00 PM · Coinbase Office Hours. Come cowork with the other builders.
+Wednesday Sep 16, 2026 · Evening · Grok Bot Together NYC. Entry is by separate invitation.
+Thursday Sep 17, 2026 · 6:30–8:30 PM · Merit Systems × Blackbird. An evening on agentic commerce and payments.
+Thursday Sep 17, 2026 · Evening · Storage is a Skill Salon by Filecoin. A small dinner for senior builders, with separate invitations.
+Friday Sep 18, 2026 · 5:45–8:45 PM · Flynet Agent Crawl NYC.
+Saturday Sep 19, 2026 · 11:30 AM–7:30 PM · Runtime Build + Demo Day. We’ll have time to build before you show what you’ve made.
+Prizes and Tracks
+Bankr is the main prize. You can enter the same project in multiple sponsor tracks and win both the main prize and additional sponsor prizes.
+Read the full track guides: Bankr grand prize · Uniswap · Definitive Flash · Dynamic.
+Bankr Grand Prize · The New Bankrs
+Build: Financial products, markets or autonomous agents using crypto and AI. Think tokenized equities, trading infrastructure, stablecoin payments, lending, yield or agent-to-agent commerce.
+Requirements: Bankr integration is optional.
+Prize: $20,000 in participant prizes.
+Resources: Bankr builder documentation.
+Uniswap · New Assets, New Agents
+Build: Tokenized real-world assets onchain or AI agents that trade them on Uniswap.
+Requirements: Integrate Uniswap’s API, AMM or Continuous Clearing Auctions (CCA) and make your project open-source.
+Resources: Uniswap documentation  ·  Get an API key.
+Definitive Flash · Best Social Trading Build
+Build: A social trading agent or app. Ideas include copy trading, shared signals, leaderboards and agents other users can follow.
+Requirements: Use Flash advanced orders: DCA, Limit, Stop Loss, Take Profit, TWAP or Bracket. Integrate into an existing product or build a new open-source project for Runtime.
+Prize: $1,000 prize pool. Additionally, each winner also gets a case study on Definitive’s channels, a feature on @DefinitiveFi and swag.
+Resources: Flash API setup  ·  Agent integration and MCP.
+Dynamic · Best Agentic Wallet or Payment Experience
+Build: An agent that makes a meaningful decision, then pays, transacts or acts for a user. Ideas include API buyers, autonomous bots, delegated assistants and agent-owned products.
+Requirements: Use a documented Dynamic wallet pattern and SDK or API to power a working wallet or payment action by the agent.
+Prize: $2,000 prize pool.
+Resources: Create a Dynamic environment  ·  Agent wallet guide  ·  Agent payments guide.
+Get help
+For questions about the week, help with your build or finding a teammate, come find us in the Runtime Discord.
+Bankr grand prize
+Bankr
+The New Bankrs: AI x Onchain Finance
+Build financial products, markets or autonomous agents using crypto rails and AI.
+What to build
+* Tokenized stocks and other onchain equities.
+* Trading tools and market infrastructure.
+* Stablecoin payments, borrowing or yield products.
+* Agentic commerce, autonomous financial agents or agent-to-agent economies.
+* Onchain content.
+About Bankr
+Bankr provides wallets, token launches, trading tools and payments for onchain apps and agents. Its tools support swaps, bridges, transfers, advanced orders, perpetuals and prediction markets. Agents can also pay for APIs and compute through x402 and Bankr’s LLM gateway.
+Build with Bankr Skills, the CLI or the Agent API.
+Track requirements
+* Bankr API integration is optional.
+* If you plan to launch a project token, use Bankr to launch, fund and distribute it.
+Judging
+Bankr will evaluate:
+* Product usefulness and appeal.
+* The opportunity to improve the existing financial stack.
+* How much you built and whether it works.
+* Originality of the idea or approach.
+* How being onchain improves the product.
+* Token design and distribution, if you plan to launch a token.
+Projects built around onchain equities receive bonus consideration.
+Prize
+$20,000 in participant prizes. Your project can also enter and win sponsor tracks.
+Resources and help
+Bankr developer documentation
+Ask build questions in the Runtime Discord
+Back to the week’s schedule and track overview
+Uniswap
+Uniswap
+New Assets, New Agents
+Build a project that brings tokenized real-world assets onchain or puts AI agents to work trading them on Uniswap.
+Track requirements
+* Integrate Uniswap’s API, automated market maker (AMM) or Continuous Clearing Auctions (CCA).
+* Publish your open-source code in a public GitHub repository.
+* Include a FEEDBACK.md file in the repository.
+* Complete the Uniswap Developer Feedback Form and include a link to your FEEDBACK.md file.
+* Use your README to point reviewers to the contracts and lines of code that implement the Uniswap integration.
+Get started
+Choose an integration in the developer documentation. For API access, get a key through the Uniswap Developer Platform.
+Uniswap developer documentation
+Developer Platform and API keys
+Uniswap Developer Feedback Form
+Get help
+Uniswap developer support
+Ask build questions in the Runtime Discord
+Back to the week’s schedule and track overview
+Definitive Flash
+Definitive Flash
+Best Social Trading Build
+Build a social trading agent or app using Flash’s advanced order types. You could help people follow another trader, share signals, compare results or trade together.
+About Definitive and Definitive Flash
+Definitive provides onchain trade execution through its web, mobile and API products. Flash API gives builders access to its execution engine, order routing and managed execution through a REST API and MCP server.
+Flash can handle execution while you build the social experience around it:
+* Connect an EOA wallet or an embedded wallet such as Privy, Dynamic or Coinbase Embedded Wallets.
+* Use the same orders endpoint for advanced order types, with Flash managing execution onchain.
+* Attach a fee to trades routed through your integration.
+* Connect agents through the MCP server or follow the agent integration documentation.
+Track requirements
+* Use one or more Flash advanced order types: DCA, Limit, Stop Loss, Take Profit, TWAP or Bracket.
+* Either add Flash to an existing product or build a new open-source project specifically for Runtime.
+* Submit through Runtime and tag @DefinitiveFi on X with a brief description of what you built.
+Ideas to explore
+* Copy trading with Flash handling execution.
+* Trade signals or leaderboards shared to X, TikTok or other social channels.
+* An agent-run trading product that other users can follow.
+* Another product that makes trading a shared experience.
+Get started
+* Get an API key.
+* Choose an advanced order type that fits your product.
+* Use the agent integration quickstart or MCP setup guide if you are building with an agent.
+Prize
+$1,000 prize pool. Each winner also receives:
+* A dedicated case study featuring their product on Definitive’s channels.
+* A dedicated product feature from @DefinitiveFi.
+* Definitive swag.
+Resources and help
+Flash documentation
+Quote endpoint
+Order endpoint
+Supported chains
+Monetizing your integration
+For build questions, come find us in the Runtime Discord.
+Back to the week’s schedule and track overview
+
+
+Dynamic
+Dynamic
+Best Agentic Wallet or Payment Experience
+Build an agent that makes or executes a meaningful decision, then pays, transacts or acts for a user through Dynamic.
+About Dynamic
+Dynamic provides wallet infrastructure for onchain apps and agents. Choose the wallet model for your build:
+* Server wallets for automated bots and backend workflows.
+* Agent wallets for agents with their own Dynamic user identity.
+* Delegated access for agents acting through a user’s wallet with limited, revocable permissions.
+Dynamic also supports agent payments through HTTP 402 flows using x402 or MPP.
+Track requirements
+Use a documented Dynamic wallet pattern and SDK or API to power a working wallet or payment action by the agent.
+Ideas to explore
+* An agent that pays for an API, retries the request and uses the response.
+* A bot that monitors a condition and executes an onchain transaction.
+* An assistant that acts for a user within their approved wallet permissions.
+* A product where an agent operates its own user-scoped wallet.
+Get started
+Create a Dynamic environment
+Choose a wallet pattern with the Agents Overview
+Set up payments with the Agent Payments guide
+Prize
+$2,000 prize pool.
+Resources and help
+Dynamic MCP server
+Trading agent demo
+Ask build questions in the Runtime Discord
+Back to the week’s schedule and track overview

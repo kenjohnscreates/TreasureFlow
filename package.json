@@ -1,0 +1,35 @@
+{
+  "name": "treasureflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Policy-governed USDC treasury agent for Runtime NYC hackathon",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "demo": "tsx src/demo/runner.ts",
+    "sweep": "tsx src/sweep/cli.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.33.2",
+  "dependencies": {
+    "dotenv": "17.4.2",
+    "viem": "2.56.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.3",
+    "eslint": "10.10.0",
+    "eslint-config-prettier": "10.1.8",
+    "prettier": "3.9.6",
+    "tsx": "4.23.13",
+    "typescript": "5.9.2",
+    "typescript-eslint": "8.70.0",
+    "vitest": "5.0.1"
+  }
+}

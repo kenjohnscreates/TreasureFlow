@@ -1,0 +1,9 @@
+dist
+node_modules
+docs
+pnpm-lock.yaml
+coverage
+PRD.md
+BUILD-PLAN.md
+PUNCH-LIST.md
+.env.example

@@ -1,0 +1,28 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.base.org/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Base Account and Base MCP Have Moved
+
+> Find the Base Account SDK and Base MCP documentation now maintained on Coinbase Developer Platform.
+
+The Base Account SDK and Base MCP documentation has moved from Base docs to [Coinbase Developer Platform](https://docs.cdp.coinbase.com). The migrated documentation is maintained there as the single source of truth.
+
+## Find the Migrated Documentation
+
+<CardGroup cols={2}>
+  <Card title="Coinbase Wallet SDK" icon="wallet" href="https://docs.cdp.coinbase.com/coinbase-wallet/overview">
+    Continue with the SDK documentation formerly published in Base docs as Base Account SDK.
+  </Card>
+
+  <Card title="Wallet MCP" icon="robot" href="https://docs.cdp.coinbase.com/ai-agents/coinbase-for-agents/wallet-mcp">
+    Continue with the AI wallet documentation formerly published in Base docs as Base MCP.
+  </Card>
+</CardGroup>
+
+## What Changed
+
+| Previous name in Base docs | Name in Coinbase Developer Platform | What to do                                                                                                  |
+| -------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Base Account SDK           | Coinbase Wallet SDK                 | Use the [Coinbase Wallet SDK documentation](https://docs.cdp.coinbase.com/coinbase-wallet/overview).        |
+| Base MCP                   | Wallet MCP                          | Use the [Wallet MCP documentation](https://docs.cdp.coinbase.com/ai-agents/coinbase-for-agents/wallet-mcp). |

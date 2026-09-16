@@ -1,0 +1,33 @@
+# Dynamic Documentation
+
+> **Agent navigation guide:** Start here. Fetch only the section file that matches the reader's SDK or task.
+> Do not scan every file linearly — use the section links below to navigate.
+> API Reference schemas are split across parts; consult them only for type definitions.
+
+> Base URL: `https://www.dynamic.xyz/docs`
+
+## Documentation sections
+
+- [Overview](https://www.dynamic.xyz/docs/overview/llms.txt) (130 pages) — Platform concepts, architecture, developer dashboard, and go-live checklist
+- [Connections](https://www.dynamic.xyz/docs/connections/llms.txt) (9 pages) — Hosted, connect-only wallet page with per-platform integration guides (Web, iOS, Android, React Native, Flutter)
+- [Recipes](https://www.dynamic.xyz/docs/recipes/llms.txt) (51 pages) — Step-by-step integration recipes, frameworks, and how-tos
+- [React SDK](https://www.dynamic.xyz/docs/react/llms.txt) (299 pages) — Components, hooks, wallets, authentication, and reference for React
+- [JavaScript SDK](https://www.dynamic.xyz/docs/javascript/llms.txt) (279 pages) — Vanilla JS / framework-agnostic integration
+- [React Native SDK](https://www.dynamic.xyz/docs/react-native/llms.txt) (141 pages) — Mobile integration for React Native
+- [Node.js SDK](https://www.dynamic.xyz/docs/node/llms.txt) (130 pages) — Server-side Node.js SDK for EVM and SVM wallets
+- [Python SDK](https://www.dynamic.xyz/docs/python/llms.txt) (10 pages) — Server-side Python SDK for EVM and SVM wallets
+- [Rust SDK](https://www.dynamic.xyz/docs/rust/llms.txt) (10 pages) — Server-side Rust SDK for EVM and SVM wallets (beta)
+- [Java SDK](https://www.dynamic.xyz/docs/java/llms.txt) (19 pages) — Server-side Java SDK for EVM and SVM wallets (beta)
+- [Flutter SDK](https://www.dynamic.xyz/docs/flutter/llms.txt) (70 pages) — Flutter/Dart integration
+- [Swift SDK](https://www.dynamic.xyz/docs/swift/llms.txt) (52 pages) — iOS/macOS Swift integration
+- [Kotlin SDK](https://www.dynamic.xyz/docs/kotlin/llms.txt) (50 pages) — Android Kotlin integration
+- [Unity SDK](https://www.dynamic.xyz/docs/unity/llms.txt) (32 pages) — Unity game engine integration
+- [CLI](https://www.dynamic.xyz/docs/cli/llms.txt) (7 pages) — Command-line tool for environment configuration and dashboard operations
+- [REST API Reference](https://www.dynamic.xyz/docs/api-reference/llms.txt) (942 pages) — Full REST API — admin endpoints, SDK endpoints, and schema types
+
+## Key entry points
+
+- [Welcome](https://www.dynamic.xyz/docs/overview/introduction/welcome.md): Product overview, SDK links, and getting started steps
+- [React Quickstart](https://www.dynamic.xyz/docs/react/quickstart.md): Install and run Dynamic in a React app
+- [JavaScript Quickstart](https://www.dynamic.xyz/docs/javascript/quickstart.md): Vanilla JavaScript integration quickstart
+- [Go Live Checklist](https://www.dynamic.xyz/docs/overview/go-live-checklist.md): Pre-launch checklist for production environments
