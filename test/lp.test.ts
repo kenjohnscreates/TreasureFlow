@@ -43,6 +43,18 @@ describe("skill tx hygiene", () => {
     expect(spendNotionalUsdc(tx)).toBe(0);
   });
 
+  it("reads sAMM add notional from the label", () => {
+    const tx = parseSkillTx({
+      to: BASE.aerodromeRouter,
+      data: "0x14961387000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      value: "0",
+      chainId: 8453,
+      label: "add sAMM USDC/USDT $4.38",
+    });
+    expect(spendNotionalUsdc(tx)).toBe(4.38);
+    expect(() => assertUnderHardStop(tx, 15)).not.toThrow();
+  });
+
   it("enforces hard stop on mint notional", () => {
     expect(spendNotionalUsdc(mint)).toBe(10);
     expect(() => assertUnderHardStop(mint, 15)).not.toThrow();
@@ -90,5 +102,6 @@ describe("chat lp stocks", () => {
     expect(reply.plan.action).toBe("lp_stocks_cli");
     expect(reply.summary.includes("Chat does not submit")).toBe(true);
     expect(coreAllowlist()).toContain(BASE.slipstreamNpmEquity);
+    expect(coreAllowlist()).toContain(BASE.aerodromeRouter);
   });
 });

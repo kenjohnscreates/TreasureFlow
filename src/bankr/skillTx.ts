@@ -15,7 +15,9 @@ export type SkillTx = {
 
 const SPEND_TOS = new Set<string>([
   BASE.usdc.toLowerCase(),
+  BASE.usdt.toLowerCase(),
   BASE.nvdac.toLowerCase(),
+  BASE.aerodromeRouter.toLowerCase(),
   BASE.slipstreamNpmEquity.toLowerCase(),
   BASE.slipstreamRouterEquity.toLowerCase(),
   BASE.nvdaGauge.toLowerCase(),
@@ -33,7 +35,7 @@ export function parseSkillTx(row: unknown): SkillTx {
   }
   assertCalldataHygiene(row.to, row.data, row.value, row.chainId);
   if (!SPEND_TOS.has(row.to.toLowerCase())) {
-    throw new AppError("skill_to", "skill tx to is not an NVDA Slipstream spender");
+    throw new AppError("skill_to", "skill tx to is not an allowlisted spender");
   }
   return {
     to: row.to as Address,
@@ -71,6 +73,8 @@ export function spendNotionalUsdc(tx: SkillTx): number {
   if (mint?.[1]) return Number(mint[1]);
   const swap = /swap \$([0-9]+(?:\.[0-9]+)?)/.exec(tx.label);
   if (swap?.[1]) return Number(swap[1]);
+  const samm = /add sAMM .* \$([0-9]+(?:\.[0-9]+)?)/.exec(tx.label);
+  if (samm?.[1]) return Number(samm[1]);
   if (/^approve /i.test(tx.label) || /^stake /i.test(tx.label)) return 0;
   throw new AppError("skill_label", "skill tx label has no spend notional");
 }

@@ -186,6 +186,9 @@ function ChatBox({ dest }: { dest?: string }) {
         <button type="button" disabled={busy} onClick={() => void send("lp stocks")}>
           LP NVDA
         </button>
+        <button type="button" disabled={busy} onClick={() => void send("sweep")}>
+          Sweep
+        </button>
       </div>
       <form onSubmit={(e) => void onSubmit(e)}>
         <textarea rows={3} value={prompt} onChange={(e) => setPrompt(e.target.value)} />

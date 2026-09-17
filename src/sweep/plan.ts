@@ -67,6 +67,34 @@ export function planSweep(
   };
 }
 
+export const DEMO_SWEEP_USDC = 5_000_000n;
+
+export function sizeLiveSweep(args: {
+  plan: SweepPlan;
+  usdtFree: bigint;
+  hardStopUsdc: bigint;
+  minSweepUsdc: bigint;
+  demoCapUsdc?: bigint;
+}): SweepPlan {
+  const { plan, usdtFree, hardStopUsdc, minSweepUsdc } = args;
+  const demoCap = args.demoCapUsdc ?? DEMO_SWEEP_USDC;
+  if (plan.action !== "add_liquidity") return plan;
+  let deposit = plan.depositUsdc;
+  if (deposit > usdtFree) deposit = usdtFree;
+  if (deposit > hardStopUsdc) deposit = hardStopUsdc;
+  if (deposit > demoCap) deposit = demoCap;
+  if (deposit < minSweepUsdc) {
+    return {
+      action: "noop",
+      reason: "sized sweep below minimum",
+      surplusUsdc: plan.surplusUsdc,
+      depositUsdc: 0n,
+      estimatedUsdt: 0n,
+    };
+  }
+  return { ...plan, depositUsdc: deposit, estimatedUsdt: deposit };
+}
+
 export function planPay(args: {
   snapshot: TreasurySnapshot;
   amountUsdc: bigint;

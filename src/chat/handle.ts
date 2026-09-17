@@ -80,7 +80,7 @@ function sweepPlan(config: AppConfig): ChatReply {
   const plan = planSweep(DEMO_SNAPSHOT, config.policy, config.paused);
   return {
     kind: "sweep",
-    summary: plan.reason,
+    summary: "Dry-run sweep plan. Bankr addLiquidity not sent from chat.",
     plan: serializeSweep(plan),
   };
 }

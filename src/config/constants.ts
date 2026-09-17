@@ -10,6 +10,8 @@ export const BASE = {
   usdt: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2" as Address,
   nvdac: "0xb20000000000000000000078ee7ce2fE4908108C" as Address,
   aerodromeRouter: "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43" as Address,
+  aerodromePoolFactory: "0x420DD381b31aEf6683db6B902084cB0FFECe40Da" as Address,
+  usdcUsdtSamm: "0x96508AE8037c6bD16162620187691F1c1e3e07C1" as Address,
   slipstreamNpmEquity: "0xe1f8cd9AC4e4A65F54f38a5CdAfCA44f6dD68b53" as Address,
   slipstreamRouterEquity: "0x698cb2b6dd822994581fea6ea4fc755d1363a92f" as Address,
   nvdaPool: "0x853f5f1b92b16714fe6cda67caad0856b83c7ab9" as Address,

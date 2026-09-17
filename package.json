@@ -18,6 +18,7 @@
     "bankr:me": "tsx src/bankr/meCli.ts",
     "bankr:pay": "tsx src/bankr/payCli.ts",
     "bankr:lp": "tsx src/bankr/lpCli.ts",
+    "bankr:sweep": "tsx src/bankr/sweepCli.ts",
     "agent": "tsx src/chat/http.ts",
     "web": "pnpm --dir web dev"
   },
