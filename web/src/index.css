@@ -153,3 +153,56 @@ pre {
   color: #8a1f1f;
   font-weight: 500;
 }
+
+button.reject-hint {
+  background: transparent;
+  color: #8a1f1f;
+  border: 1px solid #8a1f1f;
+}
+
+.receipts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.receipts li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.receipts li:last-child {
+  border-bottom: 0;
+}
+
+.receipts a {
+  color: var(--ink);
+}
+
+table.ladder {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+}
+
+table.ladder th,
+table.ladder td {
+  text-align: left;
+  padding: 6px 8px 6px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+table.ladder th {
+  color: var(--muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 10px;
+  font-family: "IBM Plex Sans", sans-serif;
+}

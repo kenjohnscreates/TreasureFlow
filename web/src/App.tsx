@@ -10,6 +10,14 @@ import {
 import { type Address } from "viem";
 import { base } from "viem/chains";
 import {
+  CHAT_DRY_COPY,
+  FLASH_LADDER_COPY,
+  FLASH_ORDERS,
+  LIVE_RECEIPTS,
+  basescanTxUrl,
+  truncateHash,
+} from "../../src/demo/evidence";
+import {
   type AgentStatus,
   type ChatReply,
   type UnsignedTx,
@@ -40,6 +48,10 @@ export function App() {
       <div className="grid two">
         <Wallets status={status} />
         <LendPanel />
+      </div>
+      <div className="grid two">
+        <ReceiptsPanel />
+        <FlashLadderPanel />
       </div>
       <ChatBox dest={status?.payDestinations?.[0]} />
     </>
@@ -138,6 +150,66 @@ function LendPanel() {
   );
 }
 
+function ReceiptsPanel() {
+  return (
+    <section className="card">
+      <h2>Live</h2>
+      <p className="muted">
+        Shipped BaseScan receipts. Static from NOTES. Fills unverified.
+      </p>
+      <ul className="receipts">
+        {LIVE_RECEIPTS.map((receipt) => (
+          <li key={receipt.id}>
+            <span>
+              {receipt.label}
+              <span className="muted"> {receipt.note}</span>
+            </span>
+            <a
+              className="mono"
+              href={basescanTxUrl(receipt.hash)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {truncateHash(receipt.hash)}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function FlashLadderPanel() {
+  return (
+    <section className="card">
+      <h2>Flash ladder</h2>
+      <table className="ladder">
+        <thead>
+          <tr>
+            <th>Rung</th>
+            <th>Limit</th>
+            <th>Qty</th>
+            <th>State</th>
+            <th>Order</th>
+          </tr>
+        </thead>
+        <tbody>
+          {FLASH_ORDERS.map((order) => (
+            <tr key={order.id}>
+              <td>{order.rungPct}% below</td>
+              <td className="mono">${order.limitPriceUsd}</td>
+              <td className="mono">{order.qtyUsdc} USDC</td>
+              <td>resting</td>
+              <td className="mono">{order.id}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="muted">{FLASH_LADDER_COPY}</p>
+    </section>
+  );
+}
+
 function ChatBox({ dest }: { dest?: string }) {
   const [prompt, setPrompt] = useState("deposit 8 USDC");
   const [reply, setReply] = useState<ChatReply | null>(null);
@@ -165,6 +237,7 @@ function ChatBox({ dest }: { dest?: string }) {
   return (
     <section className="card" style={{ marginTop: 16 }}>
       <h2>Chat</h2>
+      <p className="muted">{CHAT_DRY_COPY}</p>
       <div className="row">
         <button type="button" disabled={busy} onClick={() => void send("deposit 8 USDC")}>
           Deposit 8 USDC
@@ -178,6 +251,8 @@ function ChatBox({ dest }: { dest?: string }) {
         </button>
         <button
           type="button"
+          className="reject-hint"
+          title="Reject path. Per-call cap is 10 USDC."
           disabled={busy || !dest}
           onClick={() => dest && void send(`send 50 USDC to ${dest}`)}
         >
