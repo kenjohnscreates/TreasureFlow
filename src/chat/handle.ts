@@ -148,11 +148,14 @@ function payPlan(raw: string, config: AppConfig): ChatReply {
   }
 }
 
+const LIMITS_REASON =
+  "Dry Flash limit ladder. Chat does not submit. Live is pnpm bankr:limits.";
+
 function limitsPlan(): ChatReply {
   const rungs = buildLimitLadder({ spotUsd: 110_000, reserveUsdc: usdc(9) });
   return {
     kind: "limits",
-    summary: "Dry Flash limit ladder. Not submitted.",
+    summary: LIMITS_REASON,
     plan: {
       action: "limits",
       rungs: String(rungs.length),

@@ -17,7 +17,7 @@ export const BASE = {
   nvdaPool: "0x853f5f1b92b16714fe6cda67caad0856b83c7ab9" as Address,
   nvdaGauge: "0x30d1E5Af5CE39863E6F69a1F73ffb0e1AC9771A8" as Address,
   cbBtc: "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf" as Address,
-  // Confirm on Chainlink Base feeds before M5 live orders.
+  // Chainlink Base cbBTC / USD proxy (heartbeat 1200s, 8 decimals).
   btcUsdFeed: "0x07DA0E54543a844a80ABE69c8A12F22B3aA59f9D" as Address,
 } as const;
 

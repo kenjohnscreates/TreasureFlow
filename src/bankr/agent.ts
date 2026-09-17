@@ -31,11 +31,19 @@ export function parsePromptAccepted(body: unknown): { jobId: string; threadId?: 
 }
 
 export function extractTxHash(text: string): `0x${string}` | undefined {
-  const match = text.match(/0x[a-fA-F0-9]{64}/);
+  const match = text.match(/0x[a-fA-F0-9]{64}(?![a-fA-F0-9])/);
   if (!match) return undefined;
   const hash = match[0] as `0x${string}`;
   if (!isHex(hash) || hash.length !== 66) return undefined;
   return hash;
+}
+
+export function extractSignature(text: string): `0x${string}` | undefined {
+  const match = text.match(/0x[a-fA-F0-9]{130,}/);
+  if (!match) return undefined;
+  const sig = match[0] as `0x${string}`;
+  if (!isHex(sig) || sig.length < 132 || sig.length % 2 !== 0) return undefined;
+  return sig;
 }
 
 export function parseAgentJob(body: unknown): AgentJob {

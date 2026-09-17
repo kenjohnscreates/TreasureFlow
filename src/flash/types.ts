@@ -15,6 +15,7 @@ export type FlashQuoteRequest = {
   orderType: FlashOrderType;
   limitNotionalPrice?: string;
   recipientAddress?: string;
+  funderAddress?: string;
 };
 
 export type FlashLimitQuote = FlashQuoteRequest & {
@@ -28,9 +29,10 @@ export function limitBuyQuote(args: {
   qtyUsdc: string;
   limitNotionalPrice: string;
   chain?: string;
+  funderAddress?: string;
 }): FlashLimitQuote {
   const chain = args.chain ?? "base";
-  return {
+  const quote: FlashLimitQuote = {
     targetAsset: args.targetAsset,
     targetChain: chain,
     contraAsset: args.contraAsset,
@@ -40,4 +42,6 @@ export function limitBuyQuote(args: {
     orderType: "limit",
     limitNotionalPrice: args.limitNotionalPrice,
   };
+  if (args.funderAddress) quote.funderAddress = args.funderAddress;
+  return quote;
 }

@@ -1,5 +1,24 @@
-import { AppError, wrapExternal } from "../errors.ts";
+import { AppError } from "../errors.ts";
+import { isRecord } from "../bankr/parse.ts";
 import { FLASH_BASE_URL, type FlashQuoteRequest } from "./types.ts";
+
+function statusMessage(status: number): string {
+  if (status === 401) return "Flash 401. Check API key";
+  return `Flash ${status}`;
+}
+
+function errorCode(body: unknown): string {
+  if (!isRecord(body)) return "";
+  if (typeof body.error === "string" && body.error) return ` ${body.error}`;
+  if (isRecord(body.error)) {
+    const code = typeof body.error.code === "string" ? body.error.code : "";
+    const msg =
+      typeof body.error.message === "string" ? body.error.message.slice(0, 120) : "";
+    const extra = [code, msg].filter(Boolean).join(" ");
+    return extra ? ` ${extra}` : "";
+  }
+  return "";
+}
 
 export async function flashJson(
   path: string,
@@ -7,8 +26,9 @@ export async function flashJson(
   init: RequestInit = {},
 ): Promise<unknown> {
   if (!apiKey) throw new AppError("flash_unwired", "FLASH_API_KEY is empty");
+  let res: Response;
   try {
-    const res = await fetch(`${FLASH_BASE_URL}${path}`, {
+    res = await fetch(`${FLASH_BASE_URL}${path}`, {
       ...init,
       headers: {
         "content-type": "application/json",
@@ -16,14 +36,22 @@ export async function flashJson(
         ...(init.headers ?? {}),
       },
     });
-    if (!res.ok) {
-      const body = await res.text();
-      throw new AppError("flash_http", `Flash ${path} ${res.status}: ${body}`);
+  } catch {
+    throw new AppError("flash_http", "Flash request failed");
+  }
+  if (!res.ok) {
+    let extra = "";
+    try {
+      extra = errorCode((await res.json()) as unknown);
+    } catch {
+      /* status-only */
     }
+    throw new AppError("flash_http", `${statusMessage(res.status)}${extra}`);
+  }
+  try {
     return (await res.json()) as unknown;
-  } catch (err) {
-    if (err instanceof AppError) throw err;
-    throw wrapExternal("flash_http", err);
+  } catch {
+    throw new AppError("flash_http", "Flash returned non-JSON");
   }
 }
 
@@ -32,4 +60,28 @@ export async function quoteOrder(
   body: FlashQuoteRequest,
 ): Promise<unknown> {
   return flashJson("/quote", apiKey, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function submitOrder(apiKey: string, body: unknown): Promise<unknown> {
+  return flashJson("/order", apiKey, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function getOrder(
+  apiKey: string,
+  orderId: string,
+  funderAddress: string,
+): Promise<unknown> {
+  const q = new URLSearchParams({ funderAddress });
+  return flashJson(`/orders/${orderId}?${q.toString()}`, apiKey, { method: "GET" });
+}
+
+export async function cancelOrder(
+  apiKey: string,
+  orderId: string,
+  body: { cancelMessage: string; userSignature: string },
+): Promise<unknown> {
+  return flashJson(`/orders/${orderId}/cancel`, apiKey, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }

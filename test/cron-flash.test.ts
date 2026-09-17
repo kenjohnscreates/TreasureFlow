@@ -27,5 +27,6 @@ describe("Flash limit quote shape", () => {
     expect(quote.orderType).toBe("limit");
     expect(quote.side).toBe("buy");
     expect(quote.targetChain).toBe("base");
+    expect(quote.funderAddress).toBeUndefined();
   });
 });

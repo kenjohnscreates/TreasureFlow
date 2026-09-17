@@ -36,6 +36,7 @@ Dry-run sweep and demo (no chain):
 ```bash
 pnpm env:check
 pnpm bankr:me
+pnpm bankr:limits
 pnpm sweep -- --dry-run
 pnpm pay -- "send 8 USDC to 0x000000000000000000000000000000000000dEaD"
 pnpm demo

@@ -76,6 +76,12 @@ export function requireBankrKey(config: AppConfig): void {
   }
 }
 
+export function requireFlashKey(config: AppConfig): void {
+  if (!config.flashApiKey) {
+    throw new AppError("missing_flash", "FLASH_API_KEY is required for Flash quotes");
+  }
+}
+
 export function requireLiveWallet(config: AppConfig): void {
   if (!config.dynamicEnvironmentId || !config.dynamicApiToken) {
     throw new AppError(

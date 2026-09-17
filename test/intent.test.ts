@@ -97,5 +97,6 @@ describe("handleChat", () => {
     expect(sweep.plan.action).toBe("add_liquidity");
     const limits = handleChat("limits", config);
     expect(limits.plan.action).toBe("limits");
+    expect(limits.summary.includes("Chat does not submit")).toBe(true);
   });
 });
