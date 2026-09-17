@@ -11,7 +11,9 @@ export type AgentStatus = {
   missingLater: string[];
   dryRun: boolean;
   paused: boolean;
+  signer: "bankr";
   treasuryAddress: string | null;
+  treasuryDisplay: string | null;
   tokens: { usdc: string; usdt: string; nvdac: string; aerodromeRouter: string };
 };
 

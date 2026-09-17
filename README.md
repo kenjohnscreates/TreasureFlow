@@ -29,7 +29,7 @@ pnpm agent
 pnpm web
 ```
 
-Agent binds `http://127.0.0.1:8787`. Web is Vite on `http://127.0.0.1:5173`. Copy `web/.env.example` to `web/.env` and fill `VITE_DYNAMIC_ENVIRONMENT_ID` when Connect should work. Empty ID disables Connect; chat still works.
+Agent binds `http://127.0.0.1:8787`. Web is Vite on `http://127.0.0.1:5173`. Copy `web/.env.example` to `web/.env` and fill `VITE_DYNAMIC_ENVIRONMENT_ID` to Connect the **founder** wallet only. Empty ID disables Connect; chat still works. Connect does not create a Bankr or Dynamic server wallet.
 
 Dry-run sweep and demo (no chain):
 

@@ -1,39 +1,19 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { formatUnits } from "viem";
-import { BASE, USDC_DECIMALS } from "../config/constants.ts";
 import { loadConfig } from "../config/load.ts";
-import { missingLater, missingNow } from "../config/status.ts";
 import { AppError } from "../errors.ts";
 import { handleChat } from "./handle.ts";
+import { publicStatus } from "./status.ts";
 
-const ORIGINS = ["http://127.0.0.1:5173", "http://localhost:5173"];
+const ORIGINS = [
+  "http://127.0.0.1:5173",
+  "http://localhost:5173",
+  "http://127.0.0.1:5174",
+  "http://localhost:5174",
+];
 const HOST = "127.0.0.1";
 const PORT = 8787;
-
-function publicStatus() {
-  const config = loadConfig();
-  return {
-    policy: {
-      bufferUsdc: formatUnits(config.policy.bufferUsdc, USDC_DECIMALS),
-      perCallCapUsdc: formatUnits(config.policy.perCallCapUsdc, USDC_DECIMALS),
-      dailyCapUsdc: formatUnits(config.policy.dailyCapUsdc, USDC_DECIMALS),
-      hardStopUsdc: formatUnits(config.policy.hardStopUsdc, USDC_DECIMALS),
-    },
-    missingNow: missingNow(config),
-    missingLater: missingLater(config),
-    dryRun: config.dryRun,
-    paused: config.paused,
-    treasuryAddress: config.treasuryAddress,
-    tokens: {
-      usdc: BASE.usdc,
-      usdt: BASE.usdt,
-      nvdac: BASE.nvdac,
-      aerodromeRouter: BASE.aerodromeRouter,
-    },
-  };
-}
 
 const app = new Hono();
 app.use(
@@ -46,7 +26,7 @@ app.use(
 );
 
 app.get("/health", (c) => c.json({ ok: true }));
-app.get("/status", (c) => c.json(publicStatus()));
+app.get("/status", (c) => c.json(publicStatus(loadConfig())));
 
 app.post("/chat", async (c) => {
   let body: unknown;

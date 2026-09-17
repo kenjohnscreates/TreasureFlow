@@ -4,4 +4,9 @@ export { parseWalletMe, truncateAddress } from "./bankr/parse.ts";
 export { parseIntent } from "./chat/intent.ts";
 export { planSweep, planPay } from "./sweep/plan.ts";
 export { buildLimitLadder } from "./flash/ladder.ts";
-export { encodeAddLiquidity, encodeRemoveLiquidity } from "./aerodrome/encode.ts";
+export {
+  encodeAddLiquidity,
+  encodeRemoveLiquidity,
+  encodeTransfer,
+  decodeTransfer,
+} from "./aerodrome/encode.ts";

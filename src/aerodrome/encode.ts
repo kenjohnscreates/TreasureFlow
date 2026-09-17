@@ -1,5 +1,6 @@
-import { encodeFunctionData, type Address } from "viem";
+import { decodeFunctionData, encodeFunctionData, type Address } from "viem";
 import { BASE } from "../config/constants.ts";
+import { AppError } from "../errors.ts";
 import { ERC20_ABI, ROUTER_ABI } from "./abi.ts";
 
 const DEFAULT_SLIPPAGE_BPS = 50n;
@@ -42,6 +43,15 @@ export function encodeTransfer(to: Address, amount: bigint): `0x${string}` {
     functionName: "transfer",
     args: [to, amount],
   });
+}
+
+export function decodeTransfer(data: `0x${string}`): { to: Address; amount: bigint } {
+  const decoded = decodeFunctionData({ abi: ERC20_ABI, data });
+  if (decoded.functionName !== "transfer") {
+    throw new AppError("bad_calldata", "calldata is not ERC-20 transfer");
+  }
+  const [to, amount] = decoded.args;
+  return { to, amount };
 }
 
 export function encodeAddLiquidity(args: AddLiqArgs): `0x${string}` {

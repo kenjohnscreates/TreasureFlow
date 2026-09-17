@@ -1,5 +1,6 @@
 import { formatUnits, type Address } from "viem";
 import { encodeTransfer } from "../aerodrome/encode.ts";
+import { assertNotStranded } from "../bankr/parse.ts";
 import {
   BASE,
   NVDAC_DECIMALS,
@@ -39,7 +40,7 @@ const DEMO_SNAPSHOT: TreasurySnapshot = {
 };
 
 const LP_STOCKS_REASON =
-  "Both NVDAc and USDC legs must sit in the treasury first. Slipstream mint is signed later by the Dynamic server wallet (M2b). Not Bankr. Not the nightly USDC/USDT sweep.";
+  "Both NVDAc and USDC legs must sit in the treasury first. Slipstream mint is signed later by the Bankr wallet (B3). Not the nightly USDC/USDT sweep.";
 
 function tokenMeta(token: DepositToken): { address: Address; decimals: number } {
   if (token === "USDC") return { address: BASE.usdc, decimals: USDC_DECIMALS };
@@ -51,6 +52,7 @@ function depositPlan(intent: DepositIntent, config: AppConfig): ChatReply {
   if (!treasury) {
     throw new AppError("missing_treasury", "TREASURY_ADDRESS is required for deposit");
   }
+  assertNotStranded(treasury);
   const { address, decimals } = tokenMeta(intent.token);
   const unsignedTx: UnsignedTx = {
     chainId: BASE.chainId,
@@ -61,12 +63,14 @@ function depositPlan(intent: DepositIntent, config: AppConfig): ChatReply {
   return {
     kind: "deposit",
     summary:
-      "Unsigned ERC-20 transfer to treasury. Sign from the external wallet. Agent does not broadcast.",
+      "Unsigned ERC-20 transfer to the Bankr treasury. Sign from the external wallet. Agent does not broadcast.",
     plan: {
       action: "deposit",
       token: intent.token,
+      tokenAddress: address,
       amount: formatUnits(intent.amount, decimals),
       treasury,
+      transferTo: treasury,
     },
     unsignedTx,
   };

@@ -8,6 +8,7 @@ import {
   useRemoveWalletAccount,
 } from "@dynamic-labs-sdk/react-hooks";
 import { type Address } from "viem";
+import { base } from "viem/chains";
 import {
   type AgentStatus,
   type ChatReply,
@@ -30,7 +31,7 @@ export function App() {
       <header>
         <h1>TreasureFlow</h1>
         <p className="lede">
-          One external rewards wallet (manual sign). Dynamic server wallet is the in-app
+          One external rewards wallet (manual sign). Bankr embedded wallet is the company
           treasury. Chat plans sweep, stock LP, pay, and limits. Trailing fee yield only.
         </p>
       </header>
@@ -68,9 +69,12 @@ function Wallets({ status }: { status: AgentStatus | null }) {
     <section className="card">
       <h2>Wallets</h2>
       <p>
-        <b>Treasury</b> (Dynamic server, in-app)
+        <b>Treasury</b> (Bankr embedded, in-app)
       </p>
-      <p className="mono">{status?.treasuryAddress ?? "not created yet"}</p>
+      <p className="mono">{status?.treasuryAddress ?? "not set"}</p>
+      {status?.treasuryDisplay ? (
+        <p className="muted">shown truncated in logs as {status.treasuryDisplay}</p>
+      ) : null}
       <p>
         <b>External rewards wallet</b>
       </p>
@@ -78,7 +82,10 @@ function Wallets({ status }: { status: AgentStatus | null }) {
       {dynamicEnabled ? (
         <ConnectControls />
       ) : (
-        <p>fill DYNAMIC_ENVIRONMENT_ID (M1 punch list)</p>
+        <p>
+          fill VITE_DYNAMIC_ENVIRONMENT_ID in web/.env to Connect the founder wallet. Does
+          not create a server wallet.
+        </p>
       )}
     </section>
   );
@@ -180,7 +187,10 @@ function DepositTx({ tx }: { tx: UnsignedTx }) {
       {dynamicEnabled ? (
         <SignDeposit tx={tx} />
       ) : (
-        <p>Connect is disabled until DYNAMIC_ENVIRONMENT_ID is set.</p>
+        <p>
+          Connect is disabled until VITE_DYNAMIC_ENVIRONMENT_ID is set. Founder wallet
+          only.
+        </p>
       )}
     </div>
   );
@@ -194,10 +204,15 @@ function SignDeposit({ tx }: { tx: UnsignedTx }) {
   async function sign() {
     if (!account) return;
     setErr("");
+    if (tx.chainId !== base.id) {
+      setErr("Deposit is Base only.");
+      return;
+    }
     const walletClient = await createWalletClientForWalletAccount({
       walletAccount: account,
     });
     const sent = await walletClient.sendTransaction({
+      chain: base,
       to: tx.to as Address,
       data: tx.data,
       value: 0n,
