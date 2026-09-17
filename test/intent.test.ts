@@ -87,10 +87,11 @@ describe("handleChat", () => {
     }
   });
 
-  it("returns unwired lp stocks and dry sweep/limits", () => {
+  it("returns lp stocks CLI pointer and dry sweep/limits", () => {
     const config = loadConfig();
     const lp = handleChat("lp stocks", config);
-    expect(lp.plan.action).toBe("lp_stocks_unwired");
+    expect(lp.plan.action).toBe("lp_stocks_cli");
+    expect(lp.summary).toContain("pnpm bankr:lp");
     const sweep = handleChat("sweep", config);
     expect(sweep.kind).toBe("sweep");
     expect(sweep.plan.action).toBe("add_liquidity");

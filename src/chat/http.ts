@@ -13,7 +13,7 @@ const ORIGINS = [
   "http://localhost:5174",
 ];
 const HOST = "127.0.0.1";
-const PORT = 8787;
+const PORT = Number(process.env.AGENT_PORT || "8787");
 
 const app = new Hono();
 app.use(

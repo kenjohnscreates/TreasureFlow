@@ -1,6 +1,7 @@
 dist
 node_modules
 docs
+vendor
 pnpm-lock.yaml
 coverage
 PRD.md

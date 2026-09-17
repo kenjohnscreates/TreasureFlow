@@ -40,7 +40,7 @@ const DEMO_SNAPSHOT: TreasurySnapshot = {
 };
 
 const LP_STOCKS_REASON =
-  "Both NVDAc and USDC legs must sit in the treasury first. Slipstream mint is signed later by the Bankr wallet (B3). Not the nightly USDC/USDT sweep.";
+  "Slipstream NVDAc LP is pnpm bankr:lp. Chat does not submit. Not the nightly USDC/USDT sweep.";
 
 function tokenMeta(token: DepositToken): { address: Address; decimals: number } {
   if (token === "USDC") return { address: BASE.usdc, decimals: USDC_DECIMALS };
@@ -170,7 +170,7 @@ export function handleChat(raw: string, config: AppConfig): ChatReply {
     return {
       kind: "lp_stocks",
       summary: LP_STOCKS_REASON,
-      plan: { action: "lp_stocks_unwired", reason: LP_STOCKS_REASON },
+      plan: { action: "lp_stocks_cli", reason: LP_STOCKS_REASON },
     };
   }
   if (intent.kind === "limits") return limitsPlan();
