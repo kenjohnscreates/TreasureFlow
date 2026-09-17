@@ -2,7 +2,7 @@
 
 Policy-governed USDC treasury agent for [Runtime NYC](https://runtime.nyc) (Sep 2026).
 
-Founder connects one external rewards wallet (manual signatures). Deposits USDC / NVDAc into a Dynamic server treasury. In-app chat plans nightly USDC/USDT sweep, explicit stock LP, allowlisted pay, and Flash limits. The agent never controls the external wallet.
+Founder connects one external rewards wallet (manual signatures). Deposits USDC / NVDAc into a Bankr embedded treasury. In-app chat plans nightly USDC/USDT sweep, explicit stock LP, allowlisted pay, and Flash limits. The agent never controls the external wallet. Bankr signs treasury txs.
 
 This is a hackathon build. Not a pooled product. Not a yield promise: screens show trailing fee yield only.
 
@@ -10,7 +10,7 @@ Geo / VPN for tokenized stocks: [docs/geo.md](docs/geo.md).
 
 ## Status
 
-Offline core (config, caps, intent, dry-run plans) can run without vendor keys. Live wallet, Aerodrome, and Flash calls wait on `.env`. M1 Dynamic server-wallet create still needs NEED NOW keys. Never commit `.env`.
+This git branch is the Bankr-treasury fallback (`backup/bankr-treasury`). The Dynamic tree is a different workspace. Offline core runs without vendor keys. B0 needs `BANKR_API_KEY`. Never commit `.env`.
 
 ## Setup
 
@@ -35,6 +35,7 @@ Dry-run sweep and demo (no chain):
 
 ```bash
 pnpm env:check
+pnpm bankr:me
 pnpm sweep -- --dry-run
 pnpm pay -- "send 8 USDC to 0x000000000000000000000000000000000000dEaD"
 pnpm demo
@@ -45,14 +46,14 @@ Fill `.env` (gitignored). Same keys are listed in `.env.example`.
 ## Policy defaults (demo scale, $100 treasury)
 
 - Buffer: 15 USDC
-- Per-call cap: 10 USDC (Dynamic `maxPerCall`)
+- Per-call cap: 10 USDC (orchestrator; Bankr `allowedRecipients` is the on-wallet allowlist)
 - Daily cap: 30 USDC (orchestrator, rolling 24h)
 - Live demo pay: 8 USDC; rejection: 50 USDC
 - Hard stop: 15 USDC per mainnet tx until the recorded demo
 
 ## Tracks
 
-Built for Dynamic (server wallet + prompt-to-pay) and Flash (limit ladder). Bankr stretch is narrated only: stock LP would sign from a Bankr wallet, which splits custody. This week stock LP is planned from the Dynamic treasury (unwired until M2b).
+Built for Bankr grand prize (working product + onchain equities) and Flash (limit ladder). Dynamic $2k track is out of scope on this branch.
 
 ## Layout
 

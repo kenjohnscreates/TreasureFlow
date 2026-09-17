@@ -24,7 +24,7 @@ Bankr publishes no public country list. Sanctioned regions are blocked. A VPN th
 
 Source: [Security and account access](https://docs.bankr.bot/docs/faq/security-and-access.md). Local `docs/bankr/access.md` is the Club/access-tier page, not this FAQ.
 
-TreasureFlow will not write from a Bankr wallet this week.
+This branch uses the Bankr embedded wallet as company treasury (signer for sweep, pay, Slipstream, Flash). No product geo-gates in code. VPN exit UK or NL before B3 stock LP.
 
 ## Aerodrome
 

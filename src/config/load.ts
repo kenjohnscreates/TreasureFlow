@@ -70,6 +70,12 @@ export function loadConfig(envPath = ".env"): AppConfig {
   };
 }
 
+export function requireBankrKey(config: AppConfig): void {
+  if (!config.bankrApiKey) {
+    throw new AppError("missing_bankr", "BANKR_API_KEY is required for Bankr reads");
+  }
+}
+
 export function requireLiveWallet(config: AppConfig): void {
   if (!config.dynamicEnvironmentId || !config.dynamicApiToken) {
     throw new AppError(

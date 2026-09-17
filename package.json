@@ -15,6 +15,7 @@
     "pay": "tsx src/chat/cli.ts",
     "cron": "tsx src/sweep/cronCli.ts",
     "env:check": "tsx src/config/statusCli.ts",
+    "bankr:me": "tsx src/bankr/meCli.ts",
     "agent": "tsx src/chat/http.ts",
     "web": "pnpm --dir web dev"
   },
