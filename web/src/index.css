@@ -148,3 +148,8 @@ pre {
 .disabled-panel {
   opacity: 0.7;
 }
+
+.rejected {
+  color: #8a1f1f;
+  font-weight: 500;
+}

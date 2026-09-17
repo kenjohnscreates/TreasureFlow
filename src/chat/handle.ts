@@ -1,6 +1,6 @@
 import { formatUnits, type Address } from "viem";
 import { encodeTransfer } from "../aerodrome/encode.ts";
-import { assertNotStranded } from "../bankr/parse.ts";
+import { assertNotStranded, truncateAddress } from "../bankr/parse.ts";
 import {
   BASE,
   NVDAC_DECIMALS,
@@ -98,24 +98,54 @@ function serializeSweep(plan: SweepPlan): Record<string, string> {
 function serializePay(plan: PayPlan): Record<string, string> {
   return {
     action: plan.action,
-    to: plan.to,
-    amountUsdc: plan.amountUsdc.toString(),
-    shortfallUsdc: plan.shortfallUsdc.toString(),
+    to: truncateAddress(plan.to),
+    amountUsdc: formatUnits(plan.amountUsdc, USDC_DECIMALS),
+    shortfallUsdc: formatUnits(plan.shortfallUsdc, USDC_DECIMALS),
+    sent: "false",
+  };
+}
+
+function rejectPay(code: string): ChatReply {
+  const summary =
+    code === "per_call_cap"
+      ? "Rejected. Per-call cap is 10 USDC."
+      : code === "hard_stop"
+        ? "Rejected. Hard stop is 15 USDC per mainnet tx."
+        : code === "not_allowlisted"
+          ? "Rejected. Destination is not allowlisted."
+          : code === "daily_cap"
+            ? "Rejected. Daily cap would be exceeded."
+            : code === "missing_pay_dest"
+              ? "Rejected. PAY_DEST_1 is not set."
+              : `Rejected. ${code}`;
+  return {
+    kind: "pay",
+    summary,
+    plan: { action: "rejected", code },
   };
 }
 
 function payPlan(raw: string, config: AppConfig): ChatReply {
   const intent = parseIntent(raw);
   if (intent.kind !== "pay") throw new AppError("parse", "expected pay intent");
-  const dests = config.payDestinations.length ? config.payDestinations : [intent.to];
-  const plan = planPay({
-    snapshot: DEMO_SNAPSHOT,
-    amountUsdc: intent.amountUsdc,
-    to: intent.to,
-    config: { ...config, payDestinations: dests },
-    spend: [],
-  });
-  return { kind: "pay", summary: `plan ${plan.action}`, plan: serializePay(plan) };
+  if (!config.payDestinations.length) return rejectPay("missing_pay_dest");
+  try {
+    const plan = planPay({
+      snapshot: DEMO_SNAPSHOT,
+      amountUsdc: intent.amountUsdc,
+      to: intent.to,
+      config,
+      spend: [],
+    });
+    return {
+      kind: "pay",
+      summary: "Dry-run pay plan. Bankr transfer not sent from chat.",
+      plan: serializePay(plan),
+    };
+  } catch (err) {
+    if (err instanceof AppError) return rejectPay(err.code);
+    throw err;
+  }
 }
 
 function limitsPlan(): ChatReply {

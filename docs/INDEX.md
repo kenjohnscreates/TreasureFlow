@@ -21,6 +21,7 @@ Fetched for TreasureFlow / Runtime NYC. Count: 64.
 | `bankr/prompt-endpoint.md` | https://docs.bankr.bot/docs/agent-api/prompt-endpoint.md | 2026-09-16 | 6850 |
 | `bankr/skills-readme.md` | https://raw.githubusercontent.com/BankrBot/skills/main/README.md | 2026-09-16 | 36605 |
 | `bankr/wallet-api.md` | (local or retried without sidecar) | 2026-09-16 | 4414 |
+| `bankr/transfer.md` | https://docs.bankr.bot/docs/wallet-api/transfer.md | 2026-09-17 | 700 |
 | `bankr/wallet-info.md` | https://docs.bankr.bot/docs/wallet-api/wallet-info.md | 2026-09-16 | 900 |
 | `bankr/portfolio.md` | https://docs.bankr.bot/docs/wallet-api/portfolio.md | 2026-09-16 | 700 |
 | `bankr/x402-cloud-overview.md` | (local or retried without sidecar) | 2026-09-16 | 6550 |

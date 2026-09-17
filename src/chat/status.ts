@@ -20,6 +20,7 @@ export function publicStatus(config: AppConfig) {
     treasuryDisplay: config.treasuryAddress
       ? truncateAddress(config.treasuryAddress)
       : null,
+    payDestinations: config.payDestinations,
     tokens: {
       usdc: BASE.usdc,
       usdt: BASE.usdt,

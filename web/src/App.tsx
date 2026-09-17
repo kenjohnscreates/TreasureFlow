@@ -41,7 +41,7 @@ export function App() {
         <Wallets status={status} />
         <LendPanel />
       </div>
-      <ChatBox />
+      <ChatBox dest={status?.payDestinations?.[0]} />
     </>
   );
 }
@@ -138,15 +138,16 @@ function LendPanel() {
   );
 }
 
-function ChatBox() {
+function ChatBox({ dest }: { dest?: string }) {
   const [prompt, setPrompt] = useState("deposit 8 USDC");
   const [reply, setReply] = useState<ChatReply | null>(null);
   const [busy, setBusy] = useState(false);
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function send(next: string) {
+    const text = next.trim();
+    if (!text) return;
     setBusy(true);
     try {
-      setReply(await postChat(prompt));
+      setReply(await postChat(text));
     } catch {
       setReply({
         kind: "error",
@@ -157,9 +158,32 @@ function ChatBox() {
       setBusy(false);
     }
   }
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    await send(prompt);
+  }
   return (
     <section className="card" style={{ marginTop: 16 }}>
       <h2>Chat</h2>
+      <div className="row">
+        <button type="button" disabled={busy} onClick={() => void send("deposit 8 USDC")}>
+          Deposit 8 USDC
+        </button>
+        <button
+          type="button"
+          disabled={busy || !dest}
+          onClick={() => dest && void send(`send 8 USDC to ${dest}`)}
+        >
+          Send 8
+        </button>
+        <button
+          type="button"
+          disabled={busy || !dest}
+          onClick={() => dest && void send(`send 50 USDC to ${dest}`)}
+        >
+          Send 50
+        </button>
+      </div>
       <form onSubmit={(e) => void onSubmit(e)}>
         <textarea rows={3} value={prompt} onChange={(e) => setPrompt(e.target.value)} />
         <div className="row">
@@ -170,7 +194,9 @@ function ChatBox() {
       </form>
       {reply ? (
         <div>
-          <p>{reply.summary}</p>
+          <p className={reply.plan.action === "rejected" ? "rejected" : undefined}>
+            {reply.summary}
+          </p>
           <pre>{JSON.stringify(reply.plan, null, 2)}</pre>
           {reply.unsignedTx ? <DepositTx tx={reply.unsignedTx} /> : null}
         </div>

@@ -14,6 +14,7 @@ export type AgentStatus = {
   signer: "bankr";
   treasuryAddress: string | null;
   treasuryDisplay: string | null;
+  payDestinations: string[];
   tokens: { usdc: string; usdt: string; nvdac: string; aerodromeRouter: string };
 };
 

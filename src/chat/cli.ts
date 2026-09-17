@@ -1,4 +1,5 @@
 import { formatUnits } from "viem";
+import { truncateAddress } from "../bankr/parse.ts";
 import { loadConfig } from "../config/load.ts";
 import { USDC_DECIMALS } from "../config/constants.ts";
 import { parseIntent } from "./intent.ts";
@@ -27,17 +28,19 @@ export async function runPayCli(): Promise<void> {
   if (intent.kind !== "pay") {
     throw new AppError("parse", `Could not parse pay intent from: ${raw}`);
   }
-  const dests = config.payDestinations.length ? config.payDestinations : [intent.to];
+  if (!config.payDestinations.length) {
+    throw new AppError("missing_pay_dest", "PAY_DEST_1 is required");
+  }
   const plan = planPay({
     snapshot: demoSnapshot(),
     amountUsdc: intent.amountUsdc,
     to: intent.to,
-    config: { ...config, payDestinations: dests },
+    config,
     spend: [],
   });
   log("pay_plan", {
     action: plan.action,
-    to: plan.to,
+    to: truncateAddress(plan.to),
     amountUsdc: formatUnits(plan.amountUsdc, USDC_DECIMALS),
     shortfallUsdc: formatUnits(plan.shortfallUsdc, USDC_DECIMALS),
     missing: missingNow(config).join(",") || "none",
