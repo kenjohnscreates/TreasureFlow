@@ -1,5 +1,7 @@
 # Treasury Sweeper: Kenny's Punch List
 
+> **This is the original Dynamic-era checklist.** It is not the live Bankr demo list. See [README.md](README.md) for what ships today.
+
 Items only you can do. Ordered by when the build blocks on them. Check the box, drop the value into `.env` (never into chat, never into the repo).
 
 ## Before M0 (Wednesday or Thursday)

@@ -175,3 +175,8 @@ Running build notes. One entry per task.
 - `buildCommand` is `pnpm --dir web build`. `installCommand` also installs `web/` (nested package, own lockfile). `includeFiles: web/dist/**` on `src/app.ts` and `src/chat/http.ts` so Vite output is in the function bundle. `maxDuration` 60 kept.
 - Same-origin prod `AGENT_URL` `""` (B15). CORS + `CHAT_KEY` gate unchanged. Caps unchanged. Chat still does not place/cancel Flash. No live pay/unwind this slice.
 - Assumed: Hono preset uses `src/app.ts`, includeFiles is applied after Vite build, Hobby will now detect `framework: hono` instead of hanging on Services. Not verified: a live Vercel URL (orchestrator deploys). Treasury logs stay truncated `0x4c9D...a6c2`. No secrets.
+
+## B17 GitHub-facing docs (easy language)
+
+- Rewrote `README.md` as the GitHub homepage: what the app does, spend vs no-spend, BaseScan proof (B2-B5 CLI hashes plus B13/B14 chat hashes), chat live vs dry, caps, local run (8788/5174), live URLs, honest not-yet. Replaced stale `HANDOFF-BANKR.md` (B12 / dry chat / do-not-merge) with a short current handoff pointing at README. Banners on `HANDOFF.md` and `PUNCH-LIST.md` only. Did not rewrite `PRD.md`, `BUILD-PLAN.md`, reviews, vendor docs, or product code. `evidence.ts` still omits B13/B14 hashes (left as-is). No `PROOF.md` (README stayed one page).
+- Assumed: B17 product-truth brief (hosted alias SHA `12bec50` B15 host; git `23716fa` Vercel deploys ERROR on tsc; Club true; hashes match NOTES B2-B14). Not verified this slice: live Vercel SHA, Flash fills, current treasury USDC, a hosted chat pay, tsc ERROR reproduction. No commit. No `--live`. Runtime git not touched. Treasury stays truncated `0x4c9D...a6c2`. No secrets.
