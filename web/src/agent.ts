@@ -1,4 +1,8 @@
-export const AGENT_URL = import.meta.env.VITE_AGENT_URL || "http://127.0.0.1:8788";
+import { CHAT_KEY_HEADER } from "../../src/chat/agentUrl";
+
+export const AGENT_URL = import.meta.env.PROD
+  ? ""
+  : import.meta.env.VITE_AGENT_URL || "http://127.0.0.1:8788";
 
 export type AgentStatus = {
   policy: {
@@ -77,10 +81,14 @@ export async function fetchFlashOrders(): Promise<FlashOrdersStatus> {
   return (await res.json()) as FlashOrdersStatus;
 }
 
-export async function postChat(prompt: string): Promise<ChatReply> {
+export async function postChat(prompt: string, chatKey?: string): Promise<ChatReply> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (chatKey) headers[CHAT_KEY_HEADER] = chatKey;
   const res = await fetch(`${AGENT_URL}/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ prompt }),
   });
   const body = (await res.json()) as ChatReply;

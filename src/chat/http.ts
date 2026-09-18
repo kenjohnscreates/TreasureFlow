@@ -3,17 +3,13 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { loadConfig } from "../config/load.ts";
 import { AppError } from "../errors.ts";
+import { CHAT_KEY_HEADER } from "./agentUrl.ts";
 import { handleChat } from "./handle.ts";
+import { chatKeyGate, corsOriginHeader } from "./hosting.ts";
 import { chatLiveOpts, publicFlashOrders, publicTreasury } from "./reads.ts";
 import { publicStatus } from "./status.ts";
 import { maybeSubmitChatPay } from "./submitPay.ts";
 
-const ORIGINS = [
-  "http://127.0.0.1:5173",
-  "http://localhost:5173",
-  "http://127.0.0.1:5174",
-  "http://localhost:5174",
-];
 const HOST = "127.0.0.1";
 export const DEFAULT_AGENT_PORT = 8788;
 const PORT = Number(process.env.AGENT_PORT || String(DEFAULT_AGENT_PORT));
@@ -22,9 +18,9 @@ const app = new Hono();
 app.use(
   "*",
   cors({
-    origin: ORIGINS,
+    origin: (origin) => corsOriginHeader(origin),
     allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type"],
+    allowHeaders: ["Content-Type", CHAT_KEY_HEADER],
   }),
 );
 
@@ -50,6 +46,11 @@ app.post("/chat", async (c) => {
   if (!prompt.trim()) throw new AppError("usage", "prompt is required");
   const config = loadConfig();
   const reply = handleChat(prompt, config, await chatLiveOpts(config, prompt));
+  const gate = chatKeyGate(reply, c.req.header(CHAT_KEY_HEADER), process.env.CHAT_KEY);
+  if (!gate.ok) {
+    return c.json({ error: gate.error, message: gate.message }, gate.status);
+  }
+  if (!gate.submit) return c.json(reply);
   return c.json(await maybeSubmitChatPay(prompt, reply, config));
 });
 
@@ -61,8 +62,9 @@ app.onError((err, c) => {
 });
 
 export { app };
+export default app;
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (!process.env.VERCEL && import.meta.url === `file://${process.argv[1]}`) {
   serve({ fetch: app.fetch, hostname: HOST, port: PORT });
   process.stdout.write(`agent http://${HOST}:${PORT}\n`);
 }

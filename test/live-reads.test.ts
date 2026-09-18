@@ -125,6 +125,8 @@ describe("Bankr-tree local ports", () => {
     const vite = readFileSync(join(root, "web/vite.config.ts"), "utf8");
     expect(vite).toMatch(/port:\s*5174/);
     const agent = readFileSync(join(root, "web/src/agent.ts"), "utf8");
+    expect(agent).toContain("import.meta.env.PROD");
+    expect(agent).toMatch(/\?\s*[`'"]{2}/);
     expect(agent).toContain("http://127.0.0.1:8788");
     const readme = readFileSync(join(root, "README.md"), "utf8");
     expect(readme).toContain("127.0.0.1:8788");

@@ -28,6 +28,8 @@ import {
 } from "./agent";
 import { dynamicEnabled } from "./dynamicClient";
 
+const CHAT_KEY_STORAGE = "treasureflow-chat-key";
+
 type View = "home" | "orders" | "limits";
 type LogLine = { role: "you" | "agent"; text: string };
 
@@ -411,6 +413,23 @@ function ChatPanel({ dest }: { dest?: string }) {
   const [unsigned, setUnsigned] = useState<UnsignedTx | null>(null);
   const [encoded, setEncoded] = useState<UnsignedTx[]>([]);
   const [busy, setBusy] = useState(false);
+  const [chatKey, setChatKey] = useState(() => {
+    try {
+      return sessionStorage.getItem(CHAT_KEY_STORAGE) ?? "";
+    } catch {
+      return "";
+    }
+  });
+
+  function persistChatKey(value: string) {
+    setChatKey(value);
+    try {
+      if (value) sessionStorage.setItem(CHAT_KEY_STORAGE, value);
+      else sessionStorage.removeItem(CHAT_KEY_STORAGE);
+    } catch {
+      /* private mode */
+    }
+  }
 
   async function send(next: string) {
     const text = next.trim();
@@ -418,7 +437,7 @@ function ChatPanel({ dest }: { dest?: string }) {
     setBusy(true);
     setLines((cur) => [...cur, { role: "you", text }]);
     try {
-      const reply = await postChat(text);
+      const reply = await postChat(text, chatKey || undefined);
       setLines((cur) => [...cur, { role: "agent", text: reply.summary }]);
       setUnsigned(reply.kind === "deposit" ? (reply.unsignedTx ?? null) : null);
       setEncoded(reply.encodedTxs ?? []);
@@ -490,6 +509,16 @@ function ChatPanel({ dest }: { dest?: string }) {
           Send
         </button>
       </form>
+      <label className="composer-key">
+        <span>Write key</span>
+        <input
+          type="password"
+          autoComplete="off"
+          aria-label="Chat write key"
+          value={chatKey}
+          onChange={(e) => persistChatKey(e.target.value)}
+        />
+      </label>
     </aside>
   );
 }

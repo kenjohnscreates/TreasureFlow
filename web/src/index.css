@@ -270,8 +270,13 @@ body.page-landing {
 #home .chat h3,
 #home .chips,
 #home .log,
-#home .composer {
+#home .composer,
+#home .composer-key {
   width: 100%;
+}
+
+#home .composer-key {
+  justify-content: center;
 }
 
 #home .row {
@@ -448,6 +453,36 @@ td {
 }
 
 .composer input:focus {
+  outline: none;
+  border-color: var(--cyan);
+}
+
+.composer-key {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 8px;
+  font:
+    700 13px "IBM Plex Sans",
+    sans-serif;
+  color: var(--muted);
+}
+
+.composer-key input {
+  width: 10rem;
+  max-width: 100%;
+  min-height: 36px;
+  background: #0b0d10;
+  border: var(--stroke) solid var(--line);
+  color: var(--ink);
+  padding: 0 12px;
+  border-radius: 10px;
+  font:
+    700 13px "IBM Plex Sans",
+    sans-serif;
+}
+
+.composer-key input:focus {
   outline: none;
   border-color: var(--cyan);
 }
