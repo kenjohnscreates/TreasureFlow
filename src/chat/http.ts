@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { loadConfig } from "../config/load.ts";
 import { AppError } from "../errors.ts";
 import { handleChat } from "./handle.ts";
+import { chatLiveOpts, publicFlashOrders, publicTreasury } from "./reads.ts";
 import { publicStatus } from "./status.ts";
 
 const ORIGINS = [
@@ -13,7 +14,8 @@ const ORIGINS = [
   "http://localhost:5174",
 ];
 const HOST = "127.0.0.1";
-const PORT = Number(process.env.AGENT_PORT || "8787");
+export const DEFAULT_AGENT_PORT = 8788;
+const PORT = Number(process.env.AGENT_PORT || String(DEFAULT_AGENT_PORT));
 
 const app = new Hono();
 app.use(
@@ -27,6 +29,8 @@ app.use(
 
 app.get("/health", (c) => c.json({ ok: true }));
 app.get("/status", (c) => c.json(publicStatus(loadConfig())));
+app.get("/treasury", async (c) => c.json(await publicTreasury(loadConfig())));
+app.get("/flash-orders", async (c) => c.json(await publicFlashOrders(loadConfig())));
 
 app.post("/chat", async (c) => {
   let body: unknown;
@@ -43,7 +47,8 @@ app.post("/chat", async (c) => {
       ? body.prompt
       : "";
   if (!prompt.trim()) throw new AppError("usage", "prompt is required");
-  return c.json(handleChat(prompt, loadConfig()));
+  const config = loadConfig();
+  return c.json(handleChat(prompt, config, await chatLiveOpts(config, prompt)));
 });
 
 app.onError((err, c) => {

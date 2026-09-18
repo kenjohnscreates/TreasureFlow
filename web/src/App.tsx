@@ -20,19 +20,31 @@ import {
 import {
   type AgentStatus,
   type ChatReply,
+  type FlashOrdersStatus,
+  type TreasuryStatus,
   type UnsignedTx,
+  fetchFlashOrders,
   fetchStatus,
+  fetchTreasury,
   postChat,
 } from "./agent";
 import { dynamicEnabled } from "./dynamicClient";
 
 export function App() {
   const [status, setStatus] = useState<AgentStatus | null>(null);
+  const [treasury, setTreasury] = useState<TreasuryStatus | null>(null);
+  const [flashOrders, setFlashOrders] = useState<FlashOrdersStatus | null>(null);
   const [statusErr, setStatusErr] = useState("");
   useEffect(() => {
     fetchStatus()
       .then(setStatus)
       .catch(() => setStatusErr("Agent not reachable. Run pnpm agent."));
+    fetchTreasury()
+      .then(setTreasury)
+      .catch(() => setTreasury({ live: false, treasuryDisplay: null }));
+    fetchFlashOrders()
+      .then(setFlashOrders)
+      .catch(() => setFlashOrders(null));
   }, []);
   return (
     <>
@@ -46,12 +58,12 @@ export function App() {
       {statusErr ? <p className="muted">{statusErr}</p> : null}
       <PolicyChips status={status} />
       <div className="grid two">
-        <Wallets status={status} />
+        <Wallets status={status} treasury={treasury} />
         <LendPanel />
       </div>
       <div className="grid two">
         <ReceiptsPanel />
-        <FlashLadderPanel />
+        <FlashLadderPanel live={flashOrders} />
       </div>
       <ChatBox dest={status?.payDestinations?.[0]} />
     </>
@@ -76,7 +88,13 @@ function PolicyChips({ status }: { status: AgentStatus | null }) {
   );
 }
 
-function Wallets({ status }: { status: AgentStatus | null }) {
+function Wallets({
+  status,
+  treasury,
+}: {
+  status: AgentStatus | null;
+  treasury: TreasuryStatus | null;
+}) {
   return (
     <section className="card">
       <h2>Wallets</h2>
@@ -87,6 +105,7 @@ function Wallets({ status }: { status: AgentStatus | null }) {
       {status?.treasuryDisplay ? (
         <p className="muted">shown truncated in logs as {status.treasuryDisplay}</p>
       ) : null}
+      <IdleCash treasury={treasury} />
       <p>
         <b>External rewards wallet</b>
       </p>
@@ -141,6 +160,41 @@ function ConnectControls() {
   );
 }
 
+function IdleCash({ treasury }: { treasury: TreasuryStatus | null }) {
+  return (
+    <div className="idle-cash">
+      <p>
+        <b>Idle cash</b>
+      </p>
+      {treasury?.live ? (
+        <ul className="balances">
+          <li>
+            ETH <span className="mono">{treasury.eth ?? "0"}</span>
+          </li>
+          <li>
+            USDC <span className="mono">{treasury.usdc ?? "0"}</span>
+          </li>
+          <li>
+            USDT <span className="mono">{treasury.usdt ?? "0"}</span>
+          </li>
+          <li>
+            NVDAc <span className="mono">{treasury.nvdac ?? "0"}</span>
+          </li>
+          {treasury.tokenCount !== undefined ? (
+            <li>
+              tokens <span className="mono">{treasury.tokenCount}</span>
+            </li>
+          ) : null}
+        </ul>
+      ) : (
+        <p className="muted">
+          Balances omitted. live:false. Chat still plans on the demo snapshot.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function LendPanel() {
   return (
     <section className="card disabled-panel">
@@ -179,7 +233,10 @@ function ReceiptsPanel() {
   );
 }
 
-function FlashLadderPanel() {
+function FlashLadderPanel({ live }: { live: FlashOrdersStatus | null }) {
+  const orders = live?.orders?.length
+    ? live.orders
+    : FLASH_ORDERS.map((order) => ({ ...order, status: "resting" }));
   return (
     <section className="card">
       <h2>Flash ladder</h2>
@@ -194,18 +251,20 @@ function FlashLadderPanel() {
           </tr>
         </thead>
         <tbody>
-          {FLASH_ORDERS.map((order) => (
+          {orders.map((order) => (
             <tr key={order.id}>
               <td>{order.rungPct}% below</td>
               <td className="mono">${order.limitPriceUsd}</td>
               <td className="mono">{order.qtyUsdc} USDC</td>
-              <td>resting</td>
+              <td>{order.status || "resting"}</td>
               <td className="mono">{order.id}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <p className="muted">{FLASH_LADDER_COPY}</p>
+      <p className="muted">
+        {FLASH_LADDER_COPY} {live?.live ? "Live Flash GET." : "live:false. NOTES copy."}
+      </p>
     </section>
   );
 }

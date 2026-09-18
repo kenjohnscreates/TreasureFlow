@@ -183,6 +183,29 @@ button.reject-hint {
   color: var(--ink);
 }
 
+.idle-cash {
+  margin: 12px 0 16px;
+}
+
+.balances {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.balances li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.balances li:last-child {
+  border-bottom: 0;
+}
+
 table.ladder {
   width: 100%;
   border-collapse: collapse;

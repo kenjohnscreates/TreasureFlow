@@ -10,7 +10,7 @@ import {
 } from "../config/constants.ts";
 import { AppError } from "../errors.ts";
 import { buildLimitLadder } from "../flash/ladder.ts";
-import type { TreasurySnapshot } from "../policy/math.ts";
+import type { SpendEvent, TreasurySnapshot } from "../policy/math.ts";
 import { planPay, planSweep, type PayPlan, type SweepPlan } from "../sweep/plan.ts";
 import {
   parseIntent,
@@ -33,11 +33,22 @@ export type ChatReply = {
   unsignedTx?: UnsignedTx;
 };
 
+export type ChatOpts = {
+  snapshot?: TreasurySnapshot;
+  spend?: SpendEvent[];
+  spotUsd?: number;
+  reserveUsdc?: bigint;
+};
+
 const DEMO_SNAPSHOT: TreasurySnapshot = {
   usdcFree: 55_000_000n,
   usdtFree: 40_000_000n,
   lpValueUsdc: 0n,
 };
+
+function snapshotOf(opts: ChatOpts): TreasurySnapshot {
+  return opts.snapshot ?? DEMO_SNAPSHOT;
+}
 
 const LP_STOCKS_REASON =
   "Slipstream NVDAc LP is pnpm bankr:lp. Chat does not submit. Not the nightly USDC/USDT sweep.";
@@ -76,11 +87,12 @@ function depositPlan(intent: DepositIntent, config: AppConfig): ChatReply {
   };
 }
 
-function sweepPlan(config: AppConfig): ChatReply {
-  const plan = planSweep(DEMO_SNAPSHOT, config.policy, config.paused);
+function sweepPlan(config: AppConfig, opts: ChatOpts): ChatReply {
+  const plan = planSweep(snapshotOf(opts), config.policy, config.paused);
   return {
     kind: "sweep",
-    summary: "Dry-run sweep plan. Bankr addLiquidity not sent from chat.",
+    summary:
+      "Dry-run sweep plan. Chat does not submit. Bankr addLiquidity not sent from chat.",
     plan: serializeSweep(plan),
   };
 }
@@ -125,21 +137,22 @@ function rejectPay(code: string): ChatReply {
   };
 }
 
-function payPlan(raw: string, config: AppConfig): ChatReply {
+function payPlan(raw: string, config: AppConfig, opts: ChatOpts): ChatReply {
   const intent = parseIntent(raw);
   if (intent.kind !== "pay") throw new AppError("parse", "expected pay intent");
   if (!config.payDestinations.length) return rejectPay("missing_pay_dest");
   try {
     const plan = planPay({
-      snapshot: DEMO_SNAPSHOT,
+      snapshot: snapshotOf(opts),
       amountUsdc: intent.amountUsdc,
       to: intent.to,
       config,
-      spend: [],
+      spend: opts.spend ?? [],
     });
     return {
       kind: "pay",
-      summary: "Dry-run pay plan. Bankr transfer not sent from chat.",
+      summary:
+        "Dry-run pay plan. Chat does not submit. Bankr transfer not sent from chat.",
       plan: serializePay(plan),
     };
   } catch (err) {
@@ -151,8 +164,11 @@ function payPlan(raw: string, config: AppConfig): ChatReply {
 const LIMITS_REASON =
   "Dry Flash limit ladder. Chat does not submit. Live is pnpm bankr:limits.";
 
-function limitsPlan(): ChatReply {
-  const rungs = buildLimitLadder({ spotUsd: 110_000, reserveUsdc: usdc(9) });
+function limitsPlan(opts: ChatOpts): ChatReply {
+  const rungs = buildLimitLadder({
+    spotUsd: opts.spotUsd ?? 110_000,
+    reserveUsdc: opts.reserveUsdc ?? usdc(9),
+  });
   return {
     kind: "limits",
     summary: LIMITS_REASON,
@@ -165,10 +181,14 @@ function limitsPlan(): ChatReply {
   };
 }
 
-export function handleChat(raw: string, config: AppConfig): ChatReply {
+export function handleChat(
+  raw: string,
+  config: AppConfig,
+  opts: ChatOpts = {},
+): ChatReply {
   const intent = parseIntent(raw);
   if (intent.kind === "deposit") return depositPlan(intent, config);
-  if (intent.kind === "sweep") return sweepPlan(config);
+  if (intent.kind === "sweep") return sweepPlan(config, opts);
   if (intent.kind === "lp_stocks") {
     return {
       kind: "lp_stocks",
@@ -176,8 +196,8 @@ export function handleChat(raw: string, config: AppConfig): ChatReply {
       plan: { action: "lp_stocks_cli", reason: LP_STOCKS_REASON },
     };
   }
-  if (intent.kind === "limits") return limitsPlan();
-  if (intent.kind === "pay") return payPlan(raw, config);
+  if (intent.kind === "limits") return limitsPlan(opts);
+  if (intent.kind === "pay") return payPlan(raw, config, opts);
   return {
     kind: "unknown",
     summary: "No matching intent.",

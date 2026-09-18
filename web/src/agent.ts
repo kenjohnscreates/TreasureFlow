@@ -1,4 +1,4 @@
-export const AGENT_URL = import.meta.env.VITE_AGENT_URL || "http://127.0.0.1:8787";
+export const AGENT_URL = import.meta.env.VITE_AGENT_URL || "http://127.0.0.1:8788";
 
 export type AgentStatus = {
   policy: {
@@ -34,10 +34,45 @@ export type ChatReply = {
   message?: string;
 };
 
+export type TreasuryStatus = {
+  live: boolean;
+  eth?: string;
+  usdc?: string;
+  usdt?: string;
+  nvdac?: string;
+  tokenCount?: number;
+  treasuryDisplay: string | null;
+};
+
+export type FlashOrderLive = {
+  id: string;
+  rungPct: 2 | 4 | 6;
+  limitPriceUsd: string;
+  qtyUsdc: string;
+  status: string;
+};
+
+export type FlashOrdersStatus = {
+  live: boolean;
+  orders: FlashOrderLive[];
+};
+
 export async function fetchStatus(): Promise<AgentStatus> {
   const res = await fetch(`${AGENT_URL}/status`);
   if (!res.ok) throw new Error("status failed");
   return (await res.json()) as AgentStatus;
+}
+
+export async function fetchTreasury(): Promise<TreasuryStatus> {
+  const res = await fetch(`${AGENT_URL}/treasury`);
+  if (!res.ok) throw new Error("treasury failed");
+  return (await res.json()) as TreasuryStatus;
+}
+
+export async function fetchFlashOrders(): Promise<FlashOrdersStatus> {
+  const res = await fetch(`${AGENT_URL}/flash-orders`);
+  if (!res.ok) throw new Error("flash-orders failed");
+  return (await res.json()) as FlashOrdersStatus;
 }
 
 export async function postChat(prompt: string): Promise<ChatReply> {
