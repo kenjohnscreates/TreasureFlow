@@ -6,6 +6,7 @@ import { AppError } from "../errors.ts";
 import { handleChat } from "./handle.ts";
 import { chatLiveOpts, publicFlashOrders, publicTreasury } from "./reads.ts";
 import { publicStatus } from "./status.ts";
+import { maybeSubmitChatPay } from "./submitPay.ts";
 
 const ORIGINS = [
   "http://127.0.0.1:5173",
@@ -48,7 +49,8 @@ app.post("/chat", async (c) => {
       : "";
   if (!prompt.trim()) throw new AppError("usage", "prompt is required");
   const config = loadConfig();
-  return c.json(handleChat(prompt, config, await chatLiveOpts(config, prompt)));
+  const reply = handleChat(prompt, config, await chatLiveOpts(config, prompt));
+  return c.json(await maybeSubmitChatPay(prompt, reply, config));
 });
 
 app.onError((err, c) => {

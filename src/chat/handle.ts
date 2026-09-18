@@ -107,13 +107,13 @@ function serializeSweep(plan: SweepPlan): Record<string, string> {
   };
 }
 
-function serializePay(plan: PayPlan): Record<string, string> {
+function serializePay(plan: PayPlan): Record<string, string | boolean> {
   return {
     action: plan.action,
     to: truncateAddress(plan.to),
     amountUsdc: formatUnits(plan.amountUsdc, USDC_DECIMALS),
     shortfallUsdc: formatUnits(plan.shortfallUsdc, USDC_DECIMALS),
-    sent: "false",
+    sent: false,
   };
 }
 
