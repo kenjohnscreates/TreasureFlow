@@ -166,3 +166,12 @@ Running build notes. One entry per task.
 - Vercel env names only (values stay in the dashboard / local `.env`, never git): `BANKR_API_KEY`, `TREASURY_ADDRESS`, `PAY_DEST_1`, `PAY_DEST_2`, `FLASH_API_KEY`, `BASE_RPC_URL`, `CHAT_KEY`, `VITE_DYNAMIC_ENVIRONMENT_ID` (frontend).
 - Bankr IP allowlist risk: Vercel egress is not a single static IP. If `BANKR_API_KEY` is IP-locked to a laptop/home IP, hosted `/treasury` and chat pay may 401. Assumed, not verified.
 - Assumed: Vercel Services + Hono `export default app` on Node (not Edge; spend log uses `fs`). Not verified: a live Vercel URL; Hobby vs Pro duration clamp; Bankr IP policy on this key. Treasury logs stay truncated `0x4c9D...a6c2`. No full treasury in git. No secrets.
+
+## B16 Hobby-safe single Hono (no Vercel Services)
+
+- Dropped `vercel.json` `services`. Hobby `treasureflow` deploys sat `INITIALIZING` with `framework: null` (~10min) because Services is not a Hobby build. One project, `framework: "hono"`. No Next.js. No KV. No new vendor.
+- Hono app is still `export default app` from `src/chat/http.ts`. `src/app.ts` re-exports it so the Hono preset can find a listed entry (`src/app.ts` before `src/index.ts`, which is a library barrel). `serve({ hostname: 127.0.0.1, port })` only when `VERCEL` is unset; `pnpm agent` stays 8788. `pnpm web` stays 5174. Runtime 5173/8787 untouched.
+- On `VERCEL`, the same app serves `web/dist` from disk (fs read, not Hono `serveStatic`, which the Hono preset ignores). `/` and hashed `/assets/*` are files. `/app` (and `/app/*`) SPA-fallback to `index.html`. API routes stay registered first. Local agent does not serve static.
+- `buildCommand` is `pnpm --dir web build`. `installCommand` also installs `web/` (nested package, own lockfile). `includeFiles: web/dist/**` on `src/app.ts` and `src/chat/http.ts` so Vite output is in the function bundle. `maxDuration` 60 kept.
+- Same-origin prod `AGENT_URL` `""` (B15). CORS + `CHAT_KEY` gate unchanged. Caps unchanged. Chat still does not place/cancel Flash. No live pay/unwind this slice.
+- Assumed: Hono preset uses `src/app.ts`, includeFiles is applied after Vite build, Hobby will now detect `framework: hono` instead of hanging on Services. Not verified: a live Vercel URL (orchestrator deploys). Treasury logs stay truncated `0x4c9D...a6c2`. No secrets.

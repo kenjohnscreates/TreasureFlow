@@ -1,6 +1,8 @@
-import { readFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Hono } from "hono";
 import { afterEach, describe, expect, it } from "vitest";
 import { LOCAL_AGENT_URL, resolveAgentUrl } from "../src/chat/agentUrl.ts";
 import {
@@ -11,6 +13,7 @@ import {
   vercelCorsOrigins,
 } from "../src/chat/hosting.ts";
 import { app } from "../src/chat/http.ts";
+import { resolveWebAsset, serveWebDist } from "../src/chat/static.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -173,25 +176,74 @@ describe("agent HTTP CORS", () => {
   });
 });
 
-describe("vercel.json services", () => {
-  it("routes agent first then SPA catch-all, maxDuration 60", () => {
+describe("vercel.json Hobby single project", () => {
+  it("drops services, builds Vite, and bundles web/dist", () => {
     const raw = readFileSync(join(root, "vercel.json"), "utf8");
     const cfg = JSON.parse(raw) as {
-      services: { web: { root: string }; agent: { entrypoint: string } };
-      rewrites: { source: string; destination: unknown }[];
+      framework?: string;
+      buildCommand?: string;
+      services?: unknown;
+      functions?: Record<string, { maxDuration?: number; includeFiles?: string }>;
     };
-    expect(cfg.services.web.root).toBe("web");
-    expect(cfg.services.agent.entrypoint).toBe("src/chat/http.ts");
-    expect(JSON.stringify(cfg)).toContain("maxDuration");
-    expect(JSON.stringify(cfg)).toContain("60");
-    const sources = cfg.rewrites.map((row) => row.source);
-    expect(sources.slice(0, 5)).toEqual([
-      "/health",
-      "/status",
-      "/treasury",
-      "/flash-orders",
-      "/chat",
-    ]);
-    expect(sources.at(-1)).toBe("/(.*)");
+    expect(cfg.services).toBeUndefined();
+    expect(cfg.framework).toBe("hono");
+    expect(cfg.buildCommand).toBe("pnpm --dir web build");
+    expect(JSON.stringify(cfg)).not.toContain('"services"');
+    const bundled = Object.values(cfg.functions ?? {});
+    expect(bundled.some((row) => row.includeFiles === "web/dist/**")).toBe(true);
+    expect(bundled.some((row) => row.maxDuration === 60)).toBe(true);
+    const entry = readFileSync(join(root, "src/app.ts"), "utf8");
+    expect(entry).toContain("hono");
+    expect(entry).toMatch(/chat\/http/);
+    expect(entry).toContain("export default");
+  });
+});
+
+describe("Vercel web/dist static + SPA fallback", () => {
+  const dist = mkdtempSync(join(tmpdir(), "tf-web-dist-"));
+  mkdirSync(join(dist, "assets"));
+  writeFileSync(join(dist, "index.html"), "<!doctype html><title>tf</title>");
+  writeFileSync(join(dist, "logo.svg"), "<svg></svg>");
+  writeFileSync(join(dist, "assets", "app.js"), "console.log(1)");
+
+  afterEach(() => {
+    delete process.env.VERCEL;
+  });
+
+  it("maps / and hashed assets to files, /app to index.html", () => {
+    expect(resolveWebAsset("/", dist)).toBe(join(dist, "index.html"));
+    expect(resolveWebAsset("/app", dist)).toBe(join(dist, "index.html"));
+    expect(resolveWebAsset("/app/", dist)).toBe(join(dist, "index.html"));
+    expect(resolveWebAsset("/logo.svg", dist)).toBe(join(dist, "logo.svg"));
+    expect(resolveWebAsset("/assets/app.js", dist)).toBe(join(dist, "assets", "app.js"));
+    expect(resolveWebAsset("/missing.js", dist)).toBeNull();
+    expect(resolveWebAsset("/../etc/passwd", dist)).toBeNull();
+  });
+
+  it("serves SPA html on VERCEL and stays API-only locally", async () => {
+    delete process.env.VERCEL;
+    const local = await app.request("/app");
+    expect(local.status).toBe(404);
+
+    process.env.VERCEL = "1";
+    const probe = new Hono();
+    probe.get("*", (c, next) => {
+      if (!process.env.VERCEL) return next();
+      return serveWebDist(c, dist);
+    });
+    const spa = await probe.request("/app");
+    expect(spa.status).toBe(200);
+    expect(spa.headers.get("content-type")).toContain("text/html");
+    expect(await spa.text()).toContain("<title>tf</title>");
+    const asset = await probe.request("/assets/app.js");
+    expect(asset.status).toBe(200);
+    expect(await asset.text()).toBe("console.log(1)");
+  });
+
+  it("keeps API routes ahead of the static catch-all", async () => {
+    process.env.VERCEL = "1";
+    const health = await app.request("/health");
+    expect(health.status).toBe(200);
+    expect(await health.json()).toEqual({ ok: true });
   });
 });

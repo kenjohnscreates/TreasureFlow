@@ -11,3 +11,4 @@ coverage/
 STOP.md
 docs/**/*.source
 docs/**/*.fetched
+.env*

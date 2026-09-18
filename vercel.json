@@ -1,28 +1,16 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
-    "web": {
-      "root": "web",
-      "framework": "vite",
-      "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "framework": "hono",
+  "installCommand": "pnpm install && pnpm --dir web install",
+  "buildCommand": "pnpm --dir web build",
+  "functions": {
+    "src/app.ts": {
+      "maxDuration": 60,
+      "includeFiles": "web/dist/**"
     },
-    "agent": {
-      "root": ".",
-      "framework": "hono",
-      "entrypoint": "src/chat/http.ts",
-      "functions": {
-        "src/chat/http.ts": {
-          "maxDuration": 60
-        }
-      }
+    "src/chat/http.ts": {
+      "maxDuration": 60,
+      "includeFiles": "web/dist/**"
     }
-  },
-  "rewrites": [
-    { "source": "/health", "destination": { "service": "agent" } },
-    { "source": "/status", "destination": { "service": "agent" } },
-    { "source": "/treasury", "destination": { "service": "agent" } },
-    { "source": "/flash-orders", "destination": { "service": "agent" } },
-    { "source": "/chat", "destination": { "service": "agent" } },
-    { "source": "/(.*)", "destination": { "service": "web" } }
-  ]
+  }
 }
