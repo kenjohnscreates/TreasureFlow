@@ -6,6 +6,7 @@ const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
+  appType: "spa",
   server: {
     host: "127.0.0.1",
     port: 5174,

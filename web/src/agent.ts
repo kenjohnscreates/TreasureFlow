@@ -23,6 +23,7 @@ export type UnsignedTx = {
   to: string;
   data: `0x${string}`;
   value: "0x0";
+  label?: string;
 };
 
 export type ChatReply = {
@@ -30,6 +31,7 @@ export type ChatReply = {
   summary: string;
   plan: Record<string, string | number | boolean>;
   unsignedTx?: UnsignedTx;
+  encodedTxs?: UnsignedTx[];
   error?: string;
   message?: string;
 };
