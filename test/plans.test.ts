@@ -91,4 +91,32 @@ describe("planPay", () => {
       }),
     ).toThrow(AppError);
   });
+
+  it("plans unwind_and_pay when LP USDC covers the shortfall", () => {
+    const config = loadConfig();
+    config.payDestinations = [dest];
+    const plan = planPay({
+      snapshot: { usdcFree: usdc(8.59), usdtFree: 0n, lpValueUsdc: usdc(4.38) },
+      amountUsdc: usdc(10),
+      to: dest,
+      config,
+      spend: [],
+    });
+    expect(plan.action).toBe("unwind_and_pay");
+    expect(plan.shortfallUsdc).toBe(usdc(1.41));
+  });
+
+  it("rejects when LP USDC cannot cover the shortfall", () => {
+    const config = loadConfig();
+    config.payDestinations = [dest];
+    expect(() =>
+      planPay({
+        snapshot: { usdcFree: usdc(8), usdtFree: 0n, lpValueUsdc: usdc(1) },
+        amountUsdc: usdc(10),
+        to: dest,
+        config,
+        spend: [],
+      }),
+    ).toThrow(AppError);
+  });
 });

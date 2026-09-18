@@ -117,7 +117,7 @@ function serializePay(plan: PayPlan): Record<string, string | boolean> {
   };
 }
 
-function rejectPay(code: string): ChatReply {
+export function rejectChatPay(code: string): ChatReply {
   const summary =
     code === "per_call_cap"
       ? "Rejected. Per-call cap is 10 USDC."
@@ -129,7 +129,9 @@ function rejectPay(code: string): ChatReply {
             ? "Rejected. Daily cap would be exceeded."
             : code === "missing_pay_dest"
               ? "Rejected. PAY_DEST_1 is not set."
-              : `Rejected. ${code}`;
+              : code === "insufficient_lp"
+                ? "Rejected. Not enough LP USDC to cover payment shortfall."
+                : `Rejected. ${code}`;
   return {
     kind: "pay",
     summary,
@@ -140,7 +142,7 @@ function rejectPay(code: string): ChatReply {
 function payPlan(raw: string, config: AppConfig, opts: ChatOpts): ChatReply {
   const intent = parseIntent(raw);
   if (intent.kind !== "pay") throw new AppError("parse", "expected pay intent");
-  if (!config.payDestinations.length) return rejectPay("missing_pay_dest");
+  if (!config.payDestinations.length) return rejectChatPay("missing_pay_dest");
   try {
     const plan = planPay({
       snapshot: snapshotOf(opts),
@@ -156,7 +158,7 @@ function payPlan(raw: string, config: AppConfig, opts: ChatOpts): ChatReply {
       plan: serializePay(plan),
     };
   } catch (err) {
-    if (err instanceof AppError) return rejectPay(err.code);
+    if (err instanceof AppError) return rejectChatPay(err.code);
     throw err;
   }
 }

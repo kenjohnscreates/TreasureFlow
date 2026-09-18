@@ -1,3 +1,5 @@
+import { formatUnits } from "viem";
+import { publicRpc, readSammLpValueUsdc } from "../aerodrome/quote.ts";
 import { getWalletPortfolio } from "../bankr/client.ts";
 import {
   parsePortfolio,
@@ -5,7 +7,7 @@ import {
   type BankrPortfolioSnap,
 } from "../bankr/parse.ts";
 import { portfolioToSnapshot } from "../bankr/snapshot.ts";
-import { BASE, type AppConfig } from "../config/constants.ts";
+import { BASE, USDC_DECIMALS, type AppConfig } from "../config/constants.ts";
 import { FLASH_ORDERS } from "../demo/evidence.ts";
 import { AppError } from "../errors.ts";
 import { getOrder } from "../flash/http.ts";
@@ -128,7 +130,25 @@ export async function chatLiveOpts(config: AppConfig, prompt: string): Promise<C
   if (!needsSnap) return opts;
 
   const snap = await tryBankrPortfolio(config);
-  if (snap) opts.snapshot = portfolioToSnapshot(snap);
+  if (snap) {
+    let lpValueUsdc = 0n;
+    const owner = snap.evmAddress ?? config.treasuryAddress;
+    if (owner) {
+      try {
+        const lp = await readSammLpValueUsdc(owner, publicRpc(config.baseRpcUrl));
+        lpValueUsdc = lp.amountUsdc;
+        log("samm_lp_quote", {
+          lpValueUsdc: formatUnits(lp.amountUsdc, USDC_DECIMALS),
+          lpValueUsdt: formatUnits(lp.amountUsdt, USDC_DECIMALS),
+          liquidity: lp.liquidity.toString(),
+        });
+      } catch (err) {
+        const code = err instanceof AppError ? err.code : "aerodrome_quote";
+        log("samm_lp_quote", { live: false, code });
+      }
+    }
+    opts.snapshot = portfolioToSnapshot(snap, lpValueUsdc);
+  }
 
   if (intent.kind === "pay") opts.spend = await loadSpendSafe();
 

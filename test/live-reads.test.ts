@@ -48,6 +48,13 @@ describe("portfolio-to-snapshot", () => {
     expect(snapshot.usdtFree).toBe(0n);
     expect(snapshot.lpValueUsdc).toBe(0n);
   });
+
+  it("uses quoteRemoveLiquidity USDC as lpValueUsdc", () => {
+    const snap = parsePortfolio(portfolioBody());
+    const snapshot = portfolioToSnapshot(snap, usdc(4.38));
+    expect(snapshot.lpValueUsdc).toBe(usdc(4.38));
+    expect(snapshot.usdcFree).toBe(parseUnits("12.5", 6));
+  });
 });
 
 describe("treasury live:false without keys", () => {

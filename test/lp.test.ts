@@ -55,6 +55,27 @@ describe("skill tx hygiene", () => {
     expect(() => assertUnderHardStop(tx, 15)).not.toThrow();
   });
 
+  it("reads sAMM remove notional and allows LP token approve", () => {
+    const remove = parseSkillTx({
+      to: BASE.aerodromeRouter,
+      data: "0xbaa2abde000000000000000000000000833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      value: "0",
+      chainId: 8453,
+      label: "remove sAMM USDC/USDT $1.41",
+    });
+    expect(spendNotionalUsdc(remove)).toBe(1.41);
+    expect(() => assertUnderHardStop(remove, 15)).not.toThrow();
+    const approve = parseSkillTx({
+      to: BASE.usdcUsdtSamm,
+      data: "0x095ea7b3000000000000000000000000cf77a3ba9a5ca399b7c97c74d54e5b1beb874e43",
+      value: "0",
+      chainId: 8453,
+      label: "approve LP -> router",
+    });
+    expect(approve.to).toBe(BASE.usdcUsdtSamm);
+    expect(spendNotionalUsdc(approve)).toBe(0);
+  });
+
   it("enforces hard stop on mint notional", () => {
     expect(spendNotionalUsdc(mint)).toBe(10);
     expect(() => assertUnderHardStop(mint, 15)).not.toThrow();

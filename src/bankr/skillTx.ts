@@ -17,6 +17,7 @@ const SPEND_TOS = new Set<string>([
   BASE.usdc.toLowerCase(),
   BASE.usdt.toLowerCase(),
   BASE.nvdac.toLowerCase(),
+  BASE.usdcUsdtSamm.toLowerCase(),
   BASE.aerodromeRouter.toLowerCase(),
   BASE.slipstreamNpmEquity.toLowerCase(),
   BASE.slipstreamRouterEquity.toLowerCase(),
@@ -73,7 +74,7 @@ export function spendNotionalUsdc(tx: SkillTx): number {
   if (mint?.[1]) return Number(mint[1]);
   const swap = /swap \$([0-9]+(?:\.[0-9]+)?)/.exec(tx.label);
   if (swap?.[1]) return Number(swap[1]);
-  const samm = /add sAMM .* \$([0-9]+(?:\.[0-9]+)?)/.exec(tx.label);
+  const samm = /(?:add|remove) sAMM .* \$([0-9]+(?:\.[0-9]+)?)/.exec(tx.label);
   if (samm?.[1]) return Number(samm[1]);
   if (/^approve /i.test(tx.label) || /^stake /i.test(tx.label)) return 0;
   throw new AppError("skill_label", "skill tx label has no spend notional");

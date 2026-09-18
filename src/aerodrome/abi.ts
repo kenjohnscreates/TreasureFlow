@@ -25,6 +25,7 @@ export const ROUTER_ABI = [
       { name: "tokenA", type: "address" },
       { name: "tokenB", type: "address" },
       { name: "stable", type: "bool" },
+      { name: "factory", type: "address" },
       { name: "liquidity", type: "uint256" },
     ],
     outputs: [
