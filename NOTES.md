@@ -398,3 +398,7 @@ Running build notes. One entry per task.
 ## Receipt notes without milestone codes
 
 - Receipts table notes for pay and Flash approve no longer say B2 / B5. Pay 8 USDC note is `To an approved wallet`. Flash USDC approve note is `Lets Flash spend USDC for cbBTC`. Other rows unchanged. Caps 15 / 10 / 30 / 15.
+
+## B42 wallet 1 / wallet 2 pay names
+
+- Approved wallets labels are always Wallet 1 / Wallet 2 (no Founder). Parser accepts `send $10 USDC to wallet 1` (PAY_DEST_1, 10 USDC, at per-call cap) and `send $50 USDC to wallet 2` (PAY_DEST_2, rejected `per_call_cap`). PAY_DEST_* still works. Chips: Send 10 / Send 50. LLM canonical lists those two lines. Caps 15 / 10 / 30 / 15.

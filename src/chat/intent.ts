@@ -43,7 +43,8 @@ export type Intent =
   | ExternalWalletIntent
   | RejectedIntent;
 
-const PAY_RE = /send\s+\$?([\d,]+(?:\.\d+)?)\s*usdc\s+to\s+(0x[a-fA-F0-9]{40}|PAY_DEST_[12])/i;
+const PAY_RE =
+  /send\s+\$?([\d,]+(?:\.\d+)?)\s*usdc\s+to\s+(0x[a-fA-F0-9]{40}|PAY_DEST_[12]|wallet\s*[12])/i;
 const DEPOSIT_RE = /deposit\s+\$?([\d,]+(?:\.\d+)?)\s*(usdc|nvdac?)\b/i;
 const FROM_EXT_DEPOSIT_RE =
   /send\s+\$?([\d,]+(?:\.\d+)?)\s+(?:usdc\s+)?from\s+(?:my\s+)?(?:external(?:\s+wallet)?|wallet(?:\s*\/\s*external)?)\s+to\s+(?:the\s+)?treasury/i;
@@ -64,12 +65,18 @@ export function parseTokenAmount(rawAmount: string, decimals: number): bigint {
   return BigInt((whole ?? "0") + fracPadded);
 }
 
+function payDestAlias(destRaw: string): PayDestAlias | undefined {
+  if (/^(?:PAY_DEST_1|wallet\s*1)$/i.test(destRaw)) return "PAY_DEST_1";
+  if (/^(?:PAY_DEST_2|wallet\s*2)$/i.test(destRaw)) return "PAY_DEST_2";
+  return undefined;
+}
+
 function parsePay(raw: string): PayIntent | undefined {
   const match = raw.trim().match(PAY_RE);
   if (!match?.[1] || !match[2]) return undefined;
   const destRaw = match[2];
-  if (/^PAY_DEST_[12]$/i.test(destRaw)) {
-    const alias = destRaw.toUpperCase() as PayDestAlias;
+  const alias = payDestAlias(destRaw);
+  if (alias) {
     return {
       kind: "pay",
       amountUsdc: parseTokenAmount(match[1], USDC_DECIMALS),

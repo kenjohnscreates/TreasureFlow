@@ -18,6 +18,7 @@ describe("B41 approved wallets page and Lend cue", () => {
     expect(app).toContain("The agent can only send to these wallets.");
     expect(app).toContain("allowlistRows");
     expect(app).toContain("payDestDisplays");
+    expect(app).toContain("`Wallet ${i + 1}`");
     expect(app).toContain("Lend & Borrow");
     expect(app).toMatch(/disabled title="Coming later"/);
     expect(app).not.toMatch(/>\s*Lend\s*</);

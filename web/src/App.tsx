@@ -37,7 +37,8 @@ type PendingWrite = {
 };
 
 const NOT_LIVE = "--";
-const SEND_CHIP = "send 8 USDC to PAY_DEST_1";
+const SEND_CHIP = "send $10 USDC to wallet 1";
+const SEND_REJECT_CHIP = "send $50 USDC to wallet 2";
 
 function needsConfirm(reply: { kind: string; plan: Record<string, string | number | boolean> }): boolean {
   const action = reply.plan.action;
@@ -335,12 +336,11 @@ function allowlistRows(
   status: AgentStatus | null,
 ): { slot: string; name: string; addr: string }[] {
   const dests = status?.payDestDisplays ?? [];
-  const founder = status?.founderDisplay;
-  return [0, 1].map((i) => {
-    const addr = dests[i];
-    const name = addr && addr === founder ? "Founder" : `Wallet ${i + 1}`;
-    return { slot: `dest-${i}`, name, addr: addr ?? "--" };
-  });
+  return [0, 1].map((i) => ({
+    slot: `dest-${i}`,
+    name: `Wallet ${i + 1}`,
+    addr: dests[i] ?? "--",
+  }));
 }
 
 function clampUsd(raw: string | undefined, fallback: number, max: number): number {
@@ -541,7 +541,8 @@ function ChatPanel({
       label: "Buy cbBTC now",
       prompt: "buy cbBTC",
     },
-    { label: "Send 8", prompt: SEND_CHIP },
+    { label: "Send 10", prompt: SEND_CHIP },
+    { label: "Send 50", prompt: SEND_REJECT_CHIP },
   ];
   const [prompt, setPrompt] = useState("");
   const [lines, setLines] = useState<LogLine[]>([

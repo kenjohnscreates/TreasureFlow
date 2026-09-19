@@ -277,7 +277,10 @@ describe("B26 dApp source guards", () => {
     expect(appSrc).not.toMatch(/CHAT_KEY_STORAGE/);
     expect(appSrc).toMatch(/type="range"/);
     expect(appSrc).not.toMatch(/>\s*Lend\s*</);
-    expect(appSrc).toContain("send 8 USDC to PAY_DEST_1");
+    expect(appSrc).toContain("send $10 USDC to wallet 1");
+    expect(appSrc).toContain("send $50 USDC to wallet 2");
+    expect(appSrc).toContain("Send 10");
+    expect(appSrc).toContain("Send 50");
     expect(appSrc).toContain("Sweep extra cash");
     expect(appSrc).not.toContain("Sweep extra cash (plan only)");
     expect(appSrc).toContain("LP stocks");
