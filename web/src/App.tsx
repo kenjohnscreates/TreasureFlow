@@ -53,20 +53,28 @@ export function App() {
   }, []);
   useEffect(() => {
     const stage = document.getElementById("stage");
+    const frame = document.getElementById("stage-frame");
+    if (!stage || !frame) return;
     const fit = () => {
-      if (!stage) return;
-      const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+      const s = window.innerWidth / 1920;
       stage.style.transform = `scale(${s})`;
+      frame.style.height = `${stage.scrollHeight * s}px`;
     };
     fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(stage);
     window.addEventListener("resize", fit);
-    return () => window.removeEventListener("resize", fit);
-  }, []);
+    return () => {
+      window.removeEventListener("resize", fit);
+      ro.disconnect();
+    };
+  }, [view]);
   const p = status?.policy;
   const orders: FlashOrderLive[] = flashOrders?.orders?.length
     ? flashOrders.orders
     : FLASH_ORDERS.map((order) => ({ ...order, status: "resting" }));
   return (
+    <div className="stage-frame" id="stage-frame">
     <div className="stage" id="stage">
       <header className="top">
         <img src="/logo.svg" alt="TreasureFlow" />
@@ -83,7 +91,7 @@ export function App() {
             aria-current={view === "orders" ? "page" : undefined}
             onClick={() => setView("orders")}
           >
-            Orders
+            Limits & Orders
           </button>
           <button type="button" disabled>
             Lend
@@ -218,6 +226,7 @@ export function App() {
           </div>
         </div>
       </section>
+    </div>
     </div>
   );
 }

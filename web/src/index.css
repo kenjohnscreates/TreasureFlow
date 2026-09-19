@@ -25,8 +25,10 @@ body {
   font:
     16px/1.45 "IBM Plex Sans",
     sans-serif;
-  overflow: hidden;
-  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: auto;
+  min-height: 100%;
 }
 
 html.page-landing,
@@ -43,9 +45,15 @@ body.page-landing {
   padding: 0;
 }
 
+.stage-frame {
+  width: 100%;
+  overflow: hidden;
+}
+
 .stage {
   width: 1920px;
-  height: 1080px;
+  height: auto;
+  min-height: 1080px;
   background: var(--bg);
   display: flex;
   flex-direction: column;
@@ -235,7 +243,7 @@ body.page-landing {
 
 .page {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: auto;
   padding: 0 var(--pad);
   display: none;
 }
@@ -324,7 +332,6 @@ body.page-landing {
   max-width: calc(640px * 2 + var(--gap));
   min-width: 0;
   width: 100%;
-  overflow-y: auto;
 }
 
 #orders .limits {

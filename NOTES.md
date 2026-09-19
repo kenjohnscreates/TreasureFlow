@@ -212,3 +212,13 @@ Running build notes. One entry per task.
 - Browser `127.0.0.1:5174` `/app` vs agent `8788`: nav Home / Orders / Lend disabled, no Limits tab. Home: External Wallet / Company, no You sign, no header Connect, no Send 50, Balance + positions + chat, no sliders. Orders: wallet span 1304 = limits 1304 = stack 1304; limit cards 419/419/419; sliders 15/10/30 then local cash 8 with no fetch; three ACCEPTED rungs; last receipts row inside panel (`bottomInside` 4.7, Flash USDC approve unclipped). Treasury truncated `0x4c9D...a6c2`.
 - No new tests. No commit. Runtime git not touched.
 - Assumed: already-running Vite 5174 / agent 8788. Not verified: native 1920 desktop wrap (automation viewport scaled the 1920 stage).
+
+## B21 Limits & Orders label + document scroll
+
+- Product only: `web/src/App.tsx`, `web/src/index.css`. Landing class `page-landing` overflow auto left as-is. Caps unchanged. Limits sliders still local React only (no persist, no POST). Chat still does not submit sweep/LP/Flash. No `--live`. No Flash place/cancel. No live pay POST.
+- Nav: Orders button label is `Limits & Orders`. Still one combined view (no Limits tab). Home and Lend (disabled) stay. View type remains `"home" | "orders"`.
+- dApp scroll: html/body `overflow-y: auto` (not hidden/100% clip). Stage is height auto (min-height 1080) in a `.stage-frame` sized to `scrollHeight * (innerWidth/1920)`. Scale is width-only so tall content is real document scroll. `#orders .stack` `overflow-y: auto` removed. Wallets are `position: static` and sit in the same document as the rest (not sticky/fixed, not outside a clipped inner scroller).
+- B18-B20 kept: no header Connect; External Wallet / Company; no You sign; no Send 50 chip; no dip disclaimer; combined Orders+Limits; 1304px wallet/limits/stack widths; receipts last row inside the box; gutter `var(--bg)`.
+- Browser `127.0.0.1:5174` `/app` vs agent `8788`: nav Home / Limits & Orders / Lend disabled. Limits & Orders: sliders 15/10/30, then buy-the-dip, then receipts; stack 1304 = wallet span 1304; last receipts row inside panel. At 1280x520, document scrollY 298; wallets `static`, bottom -114 (left the viewport); `#orders .stack` overflow visible. Home at same viewport: no sliders, no Send 50; document scrollY 200; wallets left the viewport. Landing `/`: `page-landing`, overflow auto, FAQ 7/7 closed, one Enter app, headline unchanged, document scrolls (scrollY 819 on 1339 content). Treasury truncated `0x4c9D...a6c2`.
+- No new tests. No commit. Runtime git not touched.
+- Assumed: already-running Vite 5174 / agent 8788. Not verified: native 1920 desktop wrap (automation used 1280x520 so wallets could leave); founder connect/disconnect.
