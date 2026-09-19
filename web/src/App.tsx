@@ -28,14 +28,25 @@ import {
 
 type View = "home" | "orders";
 type LogLine = { role: "you" | "agent"; text: string };
-type PendingPay = {
+type PendingWrite = {
   prompt: string;
+  kind: string;
   amount: string;
   dest: string;
 };
 
 const NOT_LIVE = "--";
 const SEND_CHIP = "send 8 USDC to PAY_DEST_1";
+
+function needsConfirm(reply: { kind: string; plan: Record<string, string | number | boolean> }): boolean {
+  const action = reply.plan.action;
+  if (action === "rejected") return false;
+  if (reply.kind === "pay") return action === "pay" || action === "unwind_and_pay";
+  if (reply.kind === "sweep") return action === "add_liquidity" || action === "noop";
+  if (reply.kind === "lp_stocks") return action === "lp_stocks";
+  if (reply.kind === "demo_flash") return action === "demo_flash" || action === "noop";
+  return false;
+}
 
 export function App() {
   const [view, setView] = useState<View>("home");
@@ -410,8 +421,12 @@ function ChatPanel({
 }) {
   const chips = [
     { label: "Deposit 20 USDC", prompt: "deposit 20 USDC" },
-    { label: "Sweep extra cash (plan only)", prompt: "sweep" },
-    { label: "LP stocks (plan only)", prompt: "lp stocks" },
+    { label: "Sweep extra cash", prompt: "sweep" },
+    { label: "LP stocks", prompt: "lp stocks" },
+    {
+      label: "Buy 1 USDC cbBTC",
+      prompt: "buy 1 USDC of cbBTC 0.01 percent below spot",
+    },
     { label: "Send 8", prompt: SEND_CHIP },
   ];
   const [prompt, setPrompt] = useState("");
@@ -424,7 +439,7 @@ function ChatPanel({
   const [unsigned, setUnsigned] = useState<UnsignedTx | null>(null);
   const [encoded, setEncoded] = useState<UnsignedTx[]>([]);
   const [busy, setBusy] = useState(false);
-  const [pending, setPending] = useState<PendingPay | null>(null);
+  const [pending, setPending] = useState<PendingWrite | null>(null);
   const [confirmErr, setConfirmErr] = useState("");
   const [confirmBusy, setConfirmBusy] = useState(false);
 
@@ -439,10 +454,11 @@ function ChatPanel({
       onTreasuryRefresh();
       setUnsigned(reply.kind === "deposit" ? (reply.unsignedTx ?? null) : null);
       setEncoded(reply.encodedTxs ?? []);
-      if (reply.plan.action === "pay" || reply.plan.action === "unwind_and_pay") {
+      if (needsConfirm(reply)) {
         setPending({
           prompt: text,
-          amount: String(reply.plan.amountUsdc ?? ""),
+          kind: reply.kind,
+          amount: String(reply.plan.amountUsdc ?? reply.plan.qtyUsdc ?? ""),
           dest: String(reply.plan.to ?? ""),
         });
         setConfirmErr("");
@@ -561,7 +577,7 @@ function ConfirmModal({
   onCancel,
   onReply,
 }: {
-  pending: PendingPay;
+  pending: PendingWrite;
   policy: AgentStatus["policy"] | undefined;
   chatKey: string;
   busy: boolean;
@@ -596,12 +612,18 @@ function ConfirmModal({
       setBusy(false);
     }
   }
+  const caps = `${policy?.bufferUsdc ?? "15"} / ${policy?.perCallCapUsdc ?? "10"} / ${policy?.dailyCapUsdc ?? "30"}`;
+  const copy =
+    pending.kind === "sweep"
+      ? `Sweep extra cash into USDC/USDT. Caps ${caps}.`
+      : pending.kind === "lp_stocks"
+        ? `LP stocks (NVDAc). Notional under 15 USDC. Caps ${caps}.`
+        : pending.kind === "demo_flash"
+          ? `Buy 1 USDC of cbBTC 0.01 percent below spot. Buys more on dips. No performance claim. Caps ${caps}.`
+          : `Send ${pending.amount} USDC to ${pending.dest}. Caps ${caps}.`;
   return (
-    <div className="confirm-modal" role="dialog" aria-label="Confirm pay">
-      <p>
-        Send {pending.amount} USDC to {pending.dest}. Caps {policy?.bufferUsdc ?? "15"} /{" "}
-        {policy?.perCallCapUsdc ?? "10"} / {policy?.dailyCapUsdc ?? "30"}.
-      </p>
+    <div className="confirm-modal" role="dialog" aria-label="Confirm">
+      <p>{copy}</p>
       {err ? <p className="muted">{err}</p> : null}
       <div className="row">
         <button

@@ -90,11 +90,11 @@ describe("chat still dry on a live snapshot", () => {
     expect(reply.plan.code).toBe("per_call_cap");
   });
 
-  it("keeps sweep dry when using live idle cash", () => {
+  it("keeps sweep a confirmable plan when using live idle cash", () => {
     const reply = handleChat("sweep", loadConfig(), {
       snapshot: { usdcFree: usdc(21), usdtFree: usdc(5), lpValueUsdc: 0n },
     });
-    expect(reply.summary).toContain("Chat does not submit");
+    expect(reply.plan.sent).toBe(false);
     expect(reply.plan.action).toBe("add_liquidity");
   });
 });
@@ -113,9 +113,14 @@ describe("flash order status parse", () => {
       treasuryAddress: null,
     });
     expect(body.live).toBe(false);
-    expect(body.orders).toHaveLength(3);
-    expect(body.orders.map((order) => order.id)).toEqual(FLASH_ORDERS.map((o) => o.id));
-    expect(body.orders.every((order) => order.status === "resting")).toBe(true);
+    expect(body.orders.length).toBeGreaterThanOrEqual(3);
+    expect(body.orders.map((order) => order.id).slice(0, 3)).toEqual(
+      FLASH_ORDERS.map((o) => o.id),
+    );
+    expect(FLASH_ORDERS.every((o) => body.orders.some((row) => row.id === o.id))).toBe(
+      true,
+    );
+    expect(body.orders.filter((order) => FLASH_ORDERS.some((o) => o.id === order.id)).every((order) => order.status === "resting")).toBe(true);
   });
 });
 

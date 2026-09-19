@@ -53,14 +53,23 @@ export function chatSubmitAllowed(
   return timingSafeEqual(a, b);
 }
 
+export function wouldSubmitChat(reply: {
+  kind: string;
+  plan: { action?: unknown };
+}): boolean {
+  const action = reply.plan.action;
+  if (reply.kind === "pay") return action === "pay" || action === "unwind_and_pay";
+  if (reply.kind === "sweep") return action === "add_liquidity" || action === "noop";
+  if (reply.kind === "lp_stocks") return action === "lp_stocks";
+  if (reply.kind === "demo_flash") return action === "demo_flash" || action === "noop";
+  return false;
+}
+
 export function wouldSubmitChatPay(reply: {
   kind: string;
   plan: { action?: unknown };
 }): boolean {
-  return (
-    reply.kind === "pay" &&
-    (reply.plan.action === "pay" || reply.plan.action === "unwind_and_pay")
-  );
+  return wouldSubmitChat(reply);
 }
 
 export type ChatKeyGate =
@@ -73,7 +82,7 @@ export function chatKeyGate(
   expected: string | undefined,
   env: NodeJS.Dict<string> = process.env,
 ): ChatKeyGate {
-  if (!wouldSubmitChatPay(reply)) return { ok: true, submit: false };
+  if (!wouldSubmitChat(reply)) return { ok: true, submit: false };
   if (!header) return { ok: true, submit: false };
   if (env.VERCEL && !expected) {
     return {

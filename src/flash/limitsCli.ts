@@ -1,4 +1,4 @@
-import { type Hex, formatUnits, hashMessage, hashTypedData, parseUnits } from "viem";
+import { type Hex, formatUnits, hashMessage, parseUnits } from "viem";
 import type { KernelDomain } from "./kernel.ts";
 import { publicRpc } from "../aerodrome/quote.ts";
 import { BASE, USDC_DECIMALS } from "../config/constants.ts";
@@ -13,6 +13,7 @@ import { assertNotStranded, parsePortfolio, truncateAddress } from "../bankr/par
 import { signPersonal, signTypedData } from "../bankr/signTyped.ts";
 import { parseSkillTx } from "../bankr/skillTx.ts";
 import { submitSkillTx } from "../bankr/submitRaw.ts";
+import { isProtectedFlashOrderId } from "./demoOrder.ts";
 import { cancelOrder, getOrder, quoteOrder, submitOrder } from "./http.ts";
 import {
   isEip7702Code,
@@ -22,14 +23,9 @@ import {
   wrapKernel7702Signature,
 } from "./kernel.ts";
 import { buildLimitLadder } from "./ladder.ts";
-import {
-  assertTypedDataJson,
-  parseFlashOrderId,
-  parseFlashOrderStatus,
-  parseFlashQuote,
-  typedDataForWallet,
-} from "./parse.ts";
+import { parseFlashOrderId, parseFlashOrderStatus, parseFlashQuote } from "./parse.ts";
 import { loadFlash, persistFlash } from "./persist.ts";
+import { signFlashPayload } from "./sign.ts";
 import { sizeLiveLimits } from "./size.ts";
 import { limitBuyQuote } from "./types.ts";
 
@@ -43,30 +39,6 @@ function usdPrice(value: number): string {
 
 function flashCancelMessage(orderId: string): string {
   return `Definitive Flash v1 \u2014 Cancel Order\nOrder: ${orderId}`;
-}
-
-async function signFlashPayload(args: {
-  apiKey: string;
-  typedDataJson: string;
-  kernel?: KernelDomain | undefined;
-}): Promise<{ signature: Hex; echo: string }> {
-  const walletTd = typedDataForWallet(assertTypedDataJson(args.typedDataJson));
-  const echo = args.typedDataJson;
-  if (!args.kernel) {
-    return {
-      echo,
-      signature: await signTypedData({
-        apiKey: args.apiKey,
-        typedDataJson: args.typedDataJson,
-      }),
-    };
-  }
-  const hash = hashTypedData(walletTd as never);
-  const inner = await signTypedData({
-    apiKey: args.apiKey,
-    typedDataJson: JSON.stringify(kernelHashTypedData({ hash, domain: args.kernel })),
-  });
-  return { echo, signature: wrapKernel7702Signature(inner) };
 }
 
 async function signCancel(args: {
@@ -93,6 +65,10 @@ async function cancelPrior(
   kernel?: KernelDomain | undefined,
 ): Promise<void> {
   for (const orderId of orderIds) {
+    if (isProtectedFlashOrderId(orderId)) {
+      log("bankr_limits_cancel", { orderId, cancelled: false, reason: "protected b5" });
+      continue;
+    }
     const cancelMessage = flashCancelMessage(orderId);
     const userSignature = await signCancel({
       apiKey: bankrApiKey,

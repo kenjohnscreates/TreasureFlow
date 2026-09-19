@@ -22,6 +22,7 @@ export type DepositIntent = {
 
 export type SweepIntent = { kind: "sweep"; raw: string };
 export type LpStocksIntent = { kind: "lp_stocks"; raw: string };
+export type DemoFlashIntent = { kind: "demo_flash"; raw: string };
 export type LimitsIntent = { kind: "limits"; raw: string };
 export type BalanceIntent = { kind: "balance"; raw: string };
 export type ExternalWalletIntent = { kind: "external_wallet"; raw: string };
@@ -36,6 +37,7 @@ export type Intent =
   | DepositIntent
   | SweepIntent
   | LpStocksIntent
+  | DemoFlashIntent
   | LimitsIntent
   | BalanceIntent
   | ExternalWalletIntent
@@ -47,6 +49,8 @@ const FROM_EXT_DEPOSIT_RE =
   /send\s+\$?([\d,]+(?:\.\d+)?)\s+(?:usdc\s+)?from\s+(?:my\s+)?(?:external(?:\s+wallet)?|wallet(?:\s*\/\s*external)?)\s+to\s+(?:the\s+)?treasury/i;
 const LP_RE = /^\s*lp(?:\s+(?:stocks|nvdac?))?\s*$/i;
 const SWEEP_RE = /^\s*sweep\b/i;
+const DEMO_FLASH_RE =
+  /^\s*buy\s+1(?:\.0*)?\s*usdc\s+of\s+cbbtc\s+0\.01\s+percent\s+below\s+spot\s*$/i;
 const LIMITS_RE = /^\s*(limits|ladder)\b/i;
 const EXTERNAL_WALLET_RE =
   /external\s+wallet|founder\s+wallet|\bmy\s+(?:external\s+)?wallet\b/i;
@@ -130,6 +134,7 @@ export function parseIntent(raw: string): Intent {
     parseDeposit(raw) ??
     (LP_RE.test(raw) ? { kind: "lp_stocks", raw } : undefined) ??
     (SWEEP_RE.test(raw) ? { kind: "sweep", raw } : undefined) ??
+    (DEMO_FLASH_RE.test(raw) ? { kind: "demo_flash", raw } : undefined) ??
     (LIMITS_RE.test(raw) ? { kind: "limits", raw } : undefined) ??
     parseExternalWallet(raw) ??
     parseBalance(raw) ?? {

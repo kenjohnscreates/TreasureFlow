@@ -107,6 +107,21 @@ describe("CHAT_KEY write gate", () => {
     });
   });
 
+  it("gates sweep add/noop and lp/demo flash like pay", () => {
+    const add = { kind: "sweep" as const, plan: { action: "add_liquidity" as const } };
+    const noop = { kind: "sweep" as const, plan: { action: "noop" as const } };
+    const lp = { kind: "lp_stocks" as const, plan: { action: "lp_stocks" as const } };
+    const flash = { kind: "demo_flash" as const, plan: { action: "demo_flash" as const } };
+    expect(chatKeyGate(add, undefined, "secret")).toEqual({ ok: true, submit: false });
+    expect(chatKeyGate(noop, "secret", "secret")).toEqual({ ok: true, submit: true });
+    expect(chatKeyGate(lp, "secret", "secret")).toEqual({ ok: true, submit: true });
+    expect(chatKeyGate(flash, undefined, "secret")).toEqual({ ok: true, submit: false });
+    expect(chatKeyGate(add, "wrong", "secret")).toMatchObject({
+      ok: false,
+      status: 401,
+    });
+  });
+
   it("is not exposed as a VITE_ var", () => {
     const agent = readFileSync(join(root, "web/src/agent.ts"), "utf8");
     const appSrc = readFileSync(join(root, "web/src/App.tsx"), "utf8");

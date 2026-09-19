@@ -16,3 +16,7 @@ export function spendFilePath(): string {
 export function challengeFilePath(): string {
   return runtimeFile("challenge.json", "treasureflow-challenge.json");
 }
+
+export function demoFlashFilePath(): string {
+  return runtimeFile("flash-demo.json", "treasureflow-flash-demo.json");
+}

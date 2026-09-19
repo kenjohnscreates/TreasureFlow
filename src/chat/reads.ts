@@ -10,8 +10,9 @@ import { portfolioToSnapshot } from "../bankr/snapshot.ts";
 import { BASE, USDC_DECIMALS, type AppConfig } from "../config/constants.ts";
 import { FLASH_ORDERS } from "../demo/evidence.ts";
 import { AppError } from "../errors.ts";
+import { loadDemoFlash } from "../flash/demoPersist.ts";
 import { getOrder } from "../flash/http.ts";
-import { parseFlashOrderStatus } from "../flash/parse.ts";
+import { parseFlashFilledQty, parseFlashOrderStatus } from "../flash/parse.ts";
 import { sizeLiveLimits } from "../flash/size.ts";
 import { log } from "../log.ts";
 import { remainingDailyCap, type SpendEvent } from "../policy/math.ts";
@@ -32,10 +33,11 @@ export type PublicTreasury = {
 
 export type PublicFlashOrder = {
   id: string;
-  rungPct: 2 | 4 | 6;
+  rungPct: number;
   limitPriceUsd: string;
   qtyUsdc: string;
   status: string;
+  filledQty?: string;
 };
 
 export type PublicFlashOrders = {
@@ -91,27 +93,52 @@ function staticFlashOrders(): PublicFlashOrder[] {
   return FLASH_ORDERS.map((order) => ({ ...order, status: "resting" }));
 }
 
+async function withLiveStatus(
+  order: PublicFlashOrder,
+  apiKey: string,
+  treasury: string,
+): Promise<{ order: PublicFlashOrder; hit: boolean }> {
+  try {
+    const body = await getOrder(apiKey, order.id, treasury);
+    const filledQty = parseFlashFilledQty(body);
+    const live: PublicFlashOrder = {
+      ...order,
+      status: parseFlashOrderStatus(body),
+    };
+    if (filledQty) live.filledQty = filledQty;
+    return { order: live, hit: true };
+  } catch (err) {
+    const code = err instanceof AppError ? err.code : "flash_http";
+    log("flash_order_read", { id: order.id, code });
+    return { order: { ...order, status: order.status || "resting" }, hit: false };
+  }
+}
+
 export async function publicFlashOrders(config: AppConfig): Promise<PublicFlashOrders> {
   const fallback = staticFlashOrders();
+  const demo = await loadDemoFlash();
+  const demoRows: PublicFlashOrder[] = demo.orders.map((order) => ({
+    id: order.id,
+    rungPct: order.pctBelowSpot,
+    limitPriceUsd: order.limitPriceUsd,
+    qtyUsdc: order.qtyUsdc,
+    status: "resting",
+  }));
+  const merged = [...fallback];
+  for (const row of demoRows) {
+    if (!merged.some((order) => order.id === row.id)) merged.push(row);
+  }
   if (!config.flashApiKey || !config.treasuryAddress) {
-    return { live: false, orders: fallback };
+    return { live: false, orders: merged };
   }
   const treasury = config.treasuryAddress;
-  let liveHits = 0;
-  const orders = await Promise.all(
-    FLASH_ORDERS.map(async (order) => {
-      try {
-        const body = await getOrder(config.flashApiKey, order.id, treasury);
-        liveHits += 1;
-        return { ...order, status: parseFlashOrderStatus(body) };
-      } catch (err) {
-        const code = err instanceof AppError ? err.code : "flash_http";
-        log("flash_order_read", { id: order.id, code });
-        return { ...order, status: "resting" };
-      }
-    }),
+  const rows = await Promise.all(
+    merged.map((order) => withLiveStatus(order, config.flashApiKey, treasury)),
   );
-  return { live: liveHits > 0, orders };
+  return {
+    live: rows.some((row) => row.hit),
+    orders: rows.map((row) => row.order),
+  };
 }
 
 async function loadSpendSafe(): Promise<SpendEvent[]> {
@@ -149,7 +176,17 @@ export async function chatLiveOpts(config: AppConfig, prompt: string): Promise<C
     opts.snapshot = portfolioToSnapshot(snap, lpValueUsdc);
   }
 
-  if (intent.kind === "pay") opts.spend = await loadSpendSafe();
+  if (intent.kind === "pay" || intent.kind === "demo_flash") {
+    opts.spend = await loadSpendSafe();
+  }
+
+  if (intent.kind === "demo_flash") {
+    try {
+      opts.spotUsd = await readSpotUsd(BASE.btcUsdFeed, config.baseRpcUrl);
+    } catch {
+      /* plan without a live limit price */
+    }
+  }
 
   if (intent.kind === "limits" && opts.snapshot) {
     const spend = opts.spend ?? (await loadSpendSafe());

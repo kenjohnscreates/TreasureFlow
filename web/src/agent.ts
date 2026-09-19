@@ -56,10 +56,11 @@ export type TreasuryStatus = {
 
 export type FlashOrderLive = {
   id: string;
-  rungPct: 2 | 4 | 6;
+  rungPct: number;
   limitPriceUsd: string;
   qtyUsdc: string;
   status: string;
+  filledQty?: string;
 };
 
 export type FlashOrdersStatus = {

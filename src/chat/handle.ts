@@ -1,5 +1,7 @@
 import { formatUnits, type Address } from "viem";
 import { encodeTransfer } from "../aerodrome/encode.ts";
+import { DEMO_LP_USD } from "../bankr/skillTx.ts";
+import { sizeTreasurySweep } from "../bankr/sweepLive.ts";
 import {
   assertNotStranded,
   truncateAddress,
@@ -13,10 +15,11 @@ import {
   type AppConfig,
 } from "../config/constants.ts";
 import { AppError } from "../errors.ts";
+import { DEMO_FLASH_PCT_BELOW, DEMO_FLASH_USDC, demoFlashLimitPrice } from "../flash/demoOrder.ts";
 import { buildLimitLadder } from "../flash/ladder.ts";
 import type { SpendEvent, TreasurySnapshot } from "../policy/math.ts";
 import { assertHardStop, assertPerCall } from "../policy/math.ts";
-import { planPay, planSweep, type PayPlan, type SweepPlan } from "../sweep/plan.ts";
+import { planPay, type PayPlan, type SweepPlan } from "../sweep/plan.ts";
 import {
   assertAllowlisted,
   parseIntent,
@@ -61,7 +64,7 @@ function treasuryLabel(config: AppConfig, opts: ChatOpts): string | null {
 }
 
 const LP_STOCKS_REASON =
-  "Slipstream NVDAc LP is pnpm bankr:lp. Chat does not submit. Not the nightly USDC/USDT sweep.";
+  "Slipstream NVDAc LP. Confirm to submit. Notional under 15 USDC. Not the nightly USDC/USDT sweep.";
 
 function tokenMeta(token: DepositToken): { address: Address; decimals: number } {
   if (token === "USDC") return { address: BASE.usdc, decimals: USDC_DECIMALS };
@@ -98,27 +101,36 @@ function depositPlan(intent: DepositIntent, config: AppConfig): ChatReply {
 }
 
 function sweepPlan(config: AppConfig, opts: ChatOpts): ChatReply {
+  if (config.paused) return rejectChat("sweep", "paused");
   const snapshot = snapshotOf(opts);
   if (!snapshot) {
     return {
       kind: "sweep",
-      summary: `${MISSING_LIVE} Chat does not submit.`,
+      summary: `${MISSING_LIVE} Confirm will noop.`,
       plan: {
         action: "noop",
         reason: "no_live_snapshot",
         surplusUsdc: "0",
         depositUsdc: "0",
         estimatedUsdt: "0",
+        sent: false,
       },
     };
   }
-  const plan = planSweep(snapshot, config.policy, config.paused);
-  return {
-    kind: "sweep",
-    summary:
-      "Dry-run sweep plan. Chat does not submit. Bankr addLiquidity not sent from chat.",
-    plan: serializeSweep(plan),
-  };
+  try {
+    const plan = sizeTreasurySweep(config, snapshot);
+    return {
+      kind: "sweep",
+      summary:
+        plan.action === "add_liquidity"
+          ? "Sweep plan. Confirm with write key and founder signature to submit."
+          : "Nothing to sweep. Confirm will noop. Does not invent USDC.",
+      plan: serializeSweep(plan),
+    };
+  } catch (err) {
+    if (err instanceof AppError) return rejectChat("sweep", err.code);
+    throw err;
+  }
 }
 
 function balancePlan(config: AppConfig, opts: ChatOpts): ChatReply {
@@ -158,13 +170,14 @@ function externalWalletPlan(): ChatReply {
   };
 }
 
-function serializeSweep(plan: SweepPlan): Record<string, string> {
+function serializeSweep(plan: SweepPlan): Record<string, string | boolean> {
   return {
     action: plan.action,
     reason: plan.reason,
     surplusUsdc: plan.surplusUsdc.toString(),
     depositUsdc: plan.depositUsdc.toString(),
     estimatedUsdt: plan.estimatedUsdt.toString(),
+    sent: false,
   };
 }
 
@@ -178,7 +191,7 @@ function serializePay(plan: PayPlan): Record<string, string | boolean> {
   };
 }
 
-export function rejectChatPay(code: string): ChatReply {
+export function rejectChat(kind: Intent["kind"], code: string): ChatReply {
   const summary =
     code === "per_call_cap"
       ? "Rejected. Per-call cap is 10 USDC."
@@ -198,12 +211,20 @@ export function rejectChatPay(code: string): ChatReply {
                     ? "Rejected. Spend log is not writable."
                     : code === "no_live_snapshot"
                       ? MISSING_LIVE
-                      : `Rejected. ${code}`;
+                      : code === "missing_bankr"
+                        ? "Rejected. BANKR_API_KEY is required."
+                        : code === "missing_flash"
+                          ? "Rejected. FLASH_API_KEY is required."
+                          : `Rejected. ${code}`;
   return {
-    kind: "pay",
+    kind,
     summary,
     plan: { action: "rejected", code },
   };
+}
+
+export function rejectChatPay(code: string): ChatReply {
+  return rejectChat("pay", code);
 }
 
 function payPlan(raw: string, config: AppConfig, opts: ChatOpts): ChatReply {
@@ -263,6 +284,66 @@ function limitsPlan(opts: ChatOpts): ChatReply {
   };
 }
 
+function lpStocksPlan(config: AppConfig): ChatReply {
+  if (config.paused) return rejectChat("lp_stocks", "paused");
+  return {
+    kind: "lp_stocks",
+    summary: LP_STOCKS_REASON,
+    plan: {
+      action: "lp_stocks",
+      reason: LP_STOCKS_REASON,
+      sent: false,
+      usd: DEMO_LP_USD,
+    },
+  };
+}
+
+const DEMO_FLASH_COPY =
+  "Buy 1 USDC of cbBTC 0.01 percent below spot. Buys more on dips. No performance claim. Confirm to place. Does not promise a fill.";
+
+function demoFlashPlan(config: AppConfig, opts: ChatOpts): ChatReply {
+  if (config.paused) return rejectChat("demo_flash", "paused");
+  try {
+    assertPerCall(DEMO_FLASH_USDC, config.policy);
+    assertHardStop(DEMO_FLASH_USDC, config.policy);
+  } catch (err) {
+    if (err instanceof AppError) return rejectChat("demo_flash", err.code);
+    throw err;
+  }
+  const snapshot = snapshotOf(opts);
+  const limitPriceUsd =
+    typeof opts.spotUsd === "number"
+      ? demoFlashLimitPrice(opts.spotUsd).toFixed(2)
+      : "";
+  const plan: Record<string, string | number | boolean> = {
+    action: "noop",
+    sent: false,
+    qtyUsdc: formatUnits(DEMO_FLASH_USDC, USDC_DECIMALS),
+    pctBelowSpot: DEMO_FLASH_PCT_BELOW,
+    hardStopOk: DEMO_FLASH_USDC < config.policy.hardStopUsdc,
+  };
+  if (limitPriceUsd) plan.limitPriceUsd = limitPriceUsd;
+  if (!snapshot) {
+    return {
+      kind: "demo_flash",
+      summary: `${MISSING_LIVE} Confirm will noop.`,
+      plan: { ...plan, reason: "no_live_snapshot" },
+    };
+  }
+  if (snapshot.usdcFree < DEMO_FLASH_USDC) {
+    return {
+      kind: "demo_flash",
+      summary: "Not enough USDC for a 1 USDC cbBTC limit. Confirm will noop.",
+      plan: { ...plan, reason: snapshot.usdcFree <= 0n ? "no free USDC" : "insufficient_usdc" },
+    };
+  }
+  return {
+    kind: "demo_flash",
+    summary: DEMO_FLASH_COPY,
+    plan: { ...plan, action: "demo_flash", reason: "place demo flash" },
+  };
+}
+
 export function handleChat(
   raw: string,
   config: AppConfig,
@@ -271,13 +352,8 @@ export function handleChat(
   const intent = parseIntent(raw);
   if (intent.kind === "deposit") return depositPlan(intent, config);
   if (intent.kind === "sweep") return sweepPlan(config, opts);
-  if (intent.kind === "lp_stocks") {
-    return {
-      kind: "lp_stocks",
-      summary: LP_STOCKS_REASON,
-      plan: { action: "lp_stocks_cli", reason: LP_STOCKS_REASON },
-    };
-  }
+  if (intent.kind === "lp_stocks") return lpStocksPlan(config);
+  if (intent.kind === "demo_flash") return demoFlashPlan(config, opts);
   if (intent.kind === "limits") return limitsPlan(opts);
   if (intent.kind === "pay") return payPlan(raw, config, opts);
   if (intent.kind === "balance") return balancePlan(config, opts);

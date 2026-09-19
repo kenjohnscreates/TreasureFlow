@@ -13,7 +13,7 @@ import { chatKeyGate, corsOriginHeader, requireWriteKey } from "./hosting.ts";
 import { writePaused } from "./pause.ts";
 import { chatLiveOpts, publicFlashOrders, publicTreasury } from "./reads.ts";
 import { publicStatus } from "./status.ts";
-import { maybeSubmitChatPay } from "./submitPay.ts";
+import { maybeSubmitChat } from "./submit.ts";
 
 const HOST = "127.0.0.1";
 export const DEFAULT_AGENT_PORT = 8788;
@@ -77,7 +77,8 @@ app.post("/chat", async (c) => {
       : "";
   if (!prompt.trim()) throw new AppError("usage", "prompt is required");
   const config = loadConfig();
-  const reply = handleChat(prompt, config, await chatLiveOpts(config, prompt));
+  const liveOpts = await chatLiveOpts(config, prompt);
+  const reply = handleChat(prompt, config, liveOpts);
   const gate = chatKeyGate(reply, c.req.header(CHAT_KEY_HEADER), process.env.CHAT_KEY);
   if (!gate.ok) {
     return c.json({ error: gate.error, message: gate.message }, gate.status);
@@ -91,7 +92,7 @@ app.post("/chat", async (c) => {
   if (!founder.ok) {
     return c.json({ error: founder.error, message: founder.message }, founder.status);
   }
-  return c.json(await maybeSubmitChatPay(prompt, reply, config));
+  return c.json(await maybeSubmitChat(prompt, reply, config, liveOpts));
 });
 
 app.onError((err, c) => {

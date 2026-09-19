@@ -55,11 +55,14 @@ describe("parseIntent", () => {
     }
   });
 
-  it("parses sweep, lp stocks, and limits", () => {
+  it("parses sweep, lp stocks, demo flash, and limits", () => {
     expect(parseIntent("sweep").kind).toBe("sweep");
     expect(parseIntent("lp").kind).toBe("lp_stocks");
     expect(parseIntent("lp stocks").kind).toBe("lp_stocks");
     expect(parseIntent("lp NVDAc").kind).toBe("lp_stocks");
+    expect(parseIntent("buy 1 USDC of cbBTC 0.01 percent below spot").kind).toBe(
+      "demo_flash",
+    );
     expect(parseIntent("limits").kind).toBe("limits");
     expect(parseIntent("ladder").kind).toBe("limits");
   });
@@ -109,16 +112,17 @@ describe("handleChat", () => {
     expect(reply.plan.sent).toBe(false);
   });
 
-  it("returns lp stocks CLI pointer and dry sweep/limits", () => {
+  it("returns lp stocks plan and sized sweep/limits", () => {
     const config = loadConfig();
     const lp = handleChat("lp stocks", config);
-    expect(lp.plan.action).toBe("lp_stocks_cli");
-    expect(lp.summary).toContain("pnpm bankr:lp");
+    expect(lp.plan.action).toBe("lp_stocks");
+    expect(lp.plan.sent).toBe(false);
     const sweep = handleChat("sweep", config, {
       snapshot: { usdcFree: 55_000_000n, usdtFree: 40_000_000n, lpValueUsdc: 0n },
     });
     expect(sweep.kind).toBe("sweep");
     expect(sweep.plan.action).toBe("add_liquidity");
+    expect(sweep.plan.sent).toBe(false);
     const limits = handleChat("limits", config);
     expect(limits.plan.action).toBe("limits");
     expect(limits.summary.includes("Chat does not submit")).toBe(true);

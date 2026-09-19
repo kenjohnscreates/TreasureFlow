@@ -59,6 +59,30 @@ export function parseFlashOrderStatus(body: unknown): string {
   return "unknown";
 }
 
+function filledFrom(raw: unknown): string | undefined {
+  if (typeof raw === "string" && raw) return raw;
+  if (typeof raw === "number" && Number.isFinite(raw)) return String(raw);
+  return undefined;
+}
+
+/** Returns filled/executed qty only when Flash JSON has it. Does not guess. */
+export function parseFlashFilledQty(body: unknown): string | undefined {
+  if (!isRecord(body)) return undefined;
+  const order = isRecord(body.order) ? body.order : body;
+  if (isRecord(order.filled)) {
+    return (
+      filledFrom(order.filled.contraAmount) ??
+      filledFrom(order.filled.targetAmount) ??
+      filledFrom(order.filled.qty)
+    );
+  }
+  return (
+    filledFrom(order.executedQty) ??
+    filledFrom(order.filledQty) ??
+    filledFrom(order.filled)
+  );
+}
+
 export function assertTypedDataJson(raw: string): Record<string, unknown> {
   let parsed: unknown;
   try {

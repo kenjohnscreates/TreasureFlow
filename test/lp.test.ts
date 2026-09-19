@@ -118,10 +118,10 @@ describe("agent job parse", () => {
 });
 
 describe("chat lp stocks", () => {
-  it("does not call Agent API from chat", () => {
+  it("plans lp stocks from chat without submitting", () => {
     const reply = handleChat("lp NVDAc", loadConfig());
-    expect(reply.plan.action).toBe("lp_stocks_cli");
-    expect(reply.summary.includes("Chat does not submit")).toBe(true);
+    expect(reply.plan.action).toBe("lp_stocks");
+    expect(reply.plan.sent).toBe(false);
     expect(coreAllowlist()).toContain(BASE.slipstreamNpmEquity);
     expect(coreAllowlist()).toContain(BASE.aerodromeRouter);
   });
