@@ -5,10 +5,12 @@
   "buildCommand": "pnpm --dir web build",
   "functions": {
     "src/app.ts": {
+      "runtime": "nodejs22.x",
       "maxDuration": 60,
       "includeFiles": "web/dist/**"
     },
     "src/chat/http.ts": {
+      "runtime": "nodejs22.x",
       "maxDuration": 60,
       "includeFiles": "web/dist/**"
     }

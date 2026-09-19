@@ -1,4 +1,3 @@
-import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { loadConfig } from "../config/load.ts";
@@ -68,6 +67,7 @@ export { app };
 export default app;
 
 if (!process.env.VERCEL && import.meta.url === `file://${process.argv[1]}`) {
+  const { serve } = await import("@hono/node-server");
   serve({ fetch: app.fetch, hostname: HOST, port: PORT });
   process.stdout.write(`agent http://${HOST}:${PORT}\n`);
 }
