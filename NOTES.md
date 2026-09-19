@@ -394,3 +394,7 @@ Running build notes. One entry per task.
 ## Header logo to landing
 
 - dApp and landing header logos are links to `https://treasureflow.vercel.app/`. In-app click uses `pushState("/")` so `/app` returns to the landing without a full reload. Caps unchanged.
+
+## Receipt notes without milestone codes
+
+- Receipts table notes for pay and Flash approve no longer say B2 / B5. Pay 8 USDC note is `To an approved wallet`. Flash USDC approve note is `Lets Flash spend USDC for cbBTC`. Other rows unchanged. Caps 15 / 10 / 30 / 15.

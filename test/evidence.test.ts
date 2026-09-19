@@ -23,7 +23,10 @@ describe("B6 live evidence", () => {
       expect(basescanTxUrl(receipt.hash).startsWith("https://basescan.org/tx/")).toBe(
         true,
       );
+      expect(receipt.note).not.toMatch(/^B\d+$/);
     }
+    expect(LIVE_RECEIPTS[0]?.note).toBe("To an approved wallet");
+    expect(LIVE_RECEIPTS[4]?.note).toBe("Lets Flash spend USDC for cbBTC");
   });
 
   it("Flash order ids, rungs, prices, and qty match NOTES", () => {

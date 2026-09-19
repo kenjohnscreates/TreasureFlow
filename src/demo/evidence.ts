@@ -21,7 +21,7 @@ export const LIVE_RECEIPTS: readonly LiveReceipt[] = [
     id: "b2-pay",
     label: "Pay 8 USDC",
     hash: "0x725611366d7ea9790ab7852740d7403c234f2c22057eb4ef9a573d9ccfb312fe",
-    note: "B2",
+    note: "To an approved wallet",
   },
   {
     id: "b3-mint",
@@ -45,7 +45,7 @@ export const LIVE_RECEIPTS: readonly LiveReceipt[] = [
     id: "b5-approve",
     label: "Flash USDC approve",
     hash: "0xb4d5193e653259cba80f342ce75753907d0a6733f115b903f8d843cd44585c46",
-    note: "B5",
+    note: "Lets Flash spend USDC for cbBTC",
   },
 ];
 
