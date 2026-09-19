@@ -20,6 +20,7 @@ import { writePaused } from "../src/chat/pause.ts";
 import { publicStatus } from "../src/chat/status.ts";
 import { maybeSubmitChatPay } from "../src/chat/submitPay.ts";
 import { loadConfig } from "../src/config/load.ts";
+import { usdc } from "../src/config/constants.ts";
 import { AppError } from "../src/errors.ts";
 
 const dest = getAddress("0x1111111111111111111111111111111111111111");
@@ -88,7 +89,7 @@ describe("B26 hosting, pause, spend, founder", () => {
     });
   });
 
-  it("plan-only POST /chat pay succeeds without the write key", async () => {
+  it("plan-only POST /chat pay without Bankr does not use demo 55", async () => {
     process.env.VERCEL = "1";
     process.env.PAY_DEST_1 = dest;
     process.env.PAUSED = "false";
@@ -99,12 +100,15 @@ describe("B26 hosting, pause, spend, founder", () => {
       body: JSON.stringify({ prompt: "send 8 USDC to PAY_DEST_1" }),
     });
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { plan: { sent?: boolean; action?: string } };
-    expect(body.plan.sent).toBe(false);
-    expect(body.plan.action).toBe("pay");
+    const body = (await res.json()) as {
+      plan: { sent?: boolean; action?: string; code?: string };
+    };
+    expect(body.plan.action).toBe("rejected");
+    expect(body.plan.code).toBe("no_live_snapshot");
+    expect(body.plan.sent).toBeUndefined();
   });
 
-  it("VERCEL + empty CHAT_KEY returns 401 on would-submit and 200 on plan", async () => {
+  it("VERCEL + empty CHAT_KEY does not submit without a live snapshot", async () => {
     process.env.VERCEL = "1";
     process.env.CHAT_KEY = "";
     process.env.PAY_DEST_1 = dest;
@@ -124,7 +128,10 @@ describe("B26 hosting, pause, spend, founder", () => {
       },
       body: JSON.stringify({ prompt: "send 8 USDC to PAY_DEST_1" }),
     });
-    expect(submit.status).toBe(401);
+    expect(submit.status).toBe(200);
+    const body = (await submit.json()) as { plan: { action?: string; code?: string } };
+    expect(body.plan.action).toBe("rejected");
+    expect(body.plan.code).toBe("no_live_snapshot");
   });
 
   it("pause file flips /status and blocks pay", async () => {
@@ -164,7 +171,9 @@ describe("B26 hosting, pause, spend, founder", () => {
       paused: false,
     };
     const prompt = `send 8 USDC to ${dest}`;
-    const reply = handleChat(prompt, config);
+    const reply = handleChat(prompt, config, {
+      snapshot: { usdcFree: usdc(55), usdtFree: usdc(40), lpValueUsdc: 0n },
+    });
     expect(reply.plan.action).toBe("pay");
     const deps = {
       transferUsdc: vi.fn(async () => "0xabc" as const),
@@ -194,7 +203,9 @@ describe("B26 hosting, pause, spend, founder", () => {
       },
       body: JSON.stringify({ prompt: "send 8 USDC to PAY_DEST_1" }),
     });
-    expect(missing.status).toBe(401);
+    expect(missing.status).toBe(200);
+    const missingBody = (await missing.json()) as { plan?: { code?: string } };
+    expect(missingBody.plan?.code).toBe("no_live_snapshot");
 
     const challenge = await issueChallenge();
     const sig = await founder.signMessage({ message: challenge.message });
@@ -217,9 +228,9 @@ describe("B26 hosting, pause, spend, founder", () => {
       },
       body: JSON.stringify({ prompt: "send 8 USDC to PAY_DEST_1" }),
     });
-    expect(submit.status).toBe(400);
-    const body = (await submit.json()) as { error?: string };
-    expect(body.error).toBe("missing_bankr");
+    expect(submit.status).toBe(200);
+    const body = (await submit.json()) as { plan?: { code?: string } };
+    expect(body.plan?.code).toBe("no_live_snapshot");
   });
 
   it("GET /status JSON has no 42-char treasury or pay dest", () => {

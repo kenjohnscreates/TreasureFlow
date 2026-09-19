@@ -1,6 +1,10 @@
 import { formatUnits, type Address } from "viem";
 import { encodeTransfer } from "../aerodrome/encode.ts";
-import { assertNotStranded, truncateAddress } from "../bankr/parse.ts";
+import {
+  assertNotStranded,
+  truncateAddress,
+  type BankrPortfolioSnap,
+} from "../bankr/parse.ts";
 import {
   BASE,
   NVDAC_DECIMALS,
@@ -11,8 +15,10 @@ import {
 import { AppError } from "../errors.ts";
 import { buildLimitLadder } from "../flash/ladder.ts";
 import type { SpendEvent, TreasurySnapshot } from "../policy/math.ts";
+import { assertHardStop, assertPerCall } from "../policy/math.ts";
 import { planPay, planSweep, type PayPlan, type SweepPlan } from "../sweep/plan.ts";
 import {
+  assertAllowlisted,
   parseIntent,
   resolvePayDest,
   type DepositIntent,
@@ -36,19 +42,22 @@ export type ChatReply = {
 
 export type ChatOpts = {
   snapshot?: TreasurySnapshot;
+  portfolio?: BankrPortfolioSnap;
   spend?: SpendEvent[];
   spotUsd?: number;
   reserveUsdc?: bigint;
 };
 
-const DEMO_SNAPSHOT: TreasurySnapshot = {
-  usdcFree: 55_000_000n,
-  usdtFree: 40_000_000n,
-  lpValueUsdc: 0n,
-};
+const MISSING_LIVE =
+  "Live treasury snapshot unavailable. Not using demo balances.";
 
-function snapshotOf(opts: ChatOpts): TreasurySnapshot {
-  return opts.snapshot ?? DEMO_SNAPSHOT;
+function snapshotOf(opts: ChatOpts): TreasurySnapshot | undefined {
+  return opts.snapshot;
+}
+
+function treasuryLabel(config: AppConfig, opts: ChatOpts): string | null {
+  const addr = opts.portfolio?.evmAddress ?? config.treasuryAddress;
+  return addr ? truncateAddress(addr) : null;
 }
 
 const LP_STOCKS_REASON =
@@ -89,12 +98,63 @@ function depositPlan(intent: DepositIntent, config: AppConfig): ChatReply {
 }
 
 function sweepPlan(config: AppConfig, opts: ChatOpts): ChatReply {
-  const plan = planSweep(snapshotOf(opts), config.policy, config.paused);
+  const snapshot = snapshotOf(opts);
+  if (!snapshot) {
+    return {
+      kind: "sweep",
+      summary: `${MISSING_LIVE} Chat does not submit.`,
+      plan: {
+        action: "noop",
+        reason: "no_live_snapshot",
+        surplusUsdc: "0",
+        depositUsdc: "0",
+        estimatedUsdt: "0",
+      },
+    };
+  }
+  const plan = planSweep(snapshot, config.policy, config.paused);
   return {
     kind: "sweep",
     summary:
       "Dry-run sweep plan. Chat does not submit. Bankr addLiquidity not sent from chat.",
     plan: serializeSweep(plan),
+  };
+}
+
+function balancePlan(config: AppConfig, opts: ChatOpts): ChatReply {
+  const display = treasuryLabel(config, opts);
+  const snap = opts.portfolio;
+  if (!snap) {
+    return {
+      kind: "balance",
+      summary: MISSING_LIVE,
+      plan: { action: "balance", live: false },
+    };
+  }
+  const treasury = display ?? "not created";
+  return {
+    kind: "balance",
+    summary: `Company treasury ${treasury}. USDC ${snap.usdc}, USDT ${snap.usdt}, NVDAc ${snap.nvdac}, ETH ${snap.eth}.`,
+    plan: {
+      action: "balance",
+      live: true,
+      treasury,
+      usdc: snap.usdc,
+      usdt: snap.usdt,
+      nvdac: snap.nvdac,
+      eth: snap.eth,
+    },
+  };
+}
+
+const EXTERNAL_WALLET_REASON =
+  "The External Wallet card shows that wallet. The agent only reports the company treasury. It does not send from the external wallet.";
+
+function externalWalletPlan(): ChatReply {
+  return {
+    kind: "external_wallet",
+    summary: EXTERNAL_WALLET_REASON,
+    plan: { action: "external_wallet", reason: EXTERNAL_WALLET_REASON },
   };
 }
 
@@ -136,7 +196,9 @@ export function rejectChatPay(code: string): ChatReply {
                   ? "Rejected. Pause is on. No outbound activity."
                   : code === "spend_unwritable"
                     ? "Rejected. Spend log is not writable."
-                    : `Rejected. ${code}`;
+                    : code === "no_live_snapshot"
+                      ? MISSING_LIVE
+                      : `Rejected. ${code}`;
   return {
     kind: "pay",
     summary,
@@ -147,12 +209,23 @@ export function rejectChatPay(code: string): ChatReply {
 function payPlan(raw: string, config: AppConfig, opts: ChatOpts): ChatReply {
   const intent = parseIntent(raw);
   if (intent.kind !== "pay") throw new AppError("parse", "expected pay intent");
+  if (config.paused) return rejectChatPay("paused");
   if (!config.payDestinations.length) return rejectChatPay("missing_pay_dest");
   const to = resolvePayDest(intent.to, config.payDestinations);
   if (!to) return rejectChatPay("missing_pay_dest");
   try {
+    assertAllowlisted(to, config.payDestinations);
+    assertPerCall(intent.amountUsdc, config.policy);
+    assertHardStop(intent.amountUsdc, config.policy);
+  } catch (err) {
+    if (err instanceof AppError) return rejectChatPay(err.code);
+    throw err;
+  }
+  const snapshot = snapshotOf(opts);
+  if (!snapshot) return rejectChatPay("no_live_snapshot");
+  try {
     const plan = planPay({
-      snapshot: snapshotOf(opts),
+      snapshot,
       amountUsdc: intent.amountUsdc,
       to,
       config,
@@ -207,6 +280,8 @@ export function handleChat(
   }
   if (intent.kind === "limits") return limitsPlan(opts);
   if (intent.kind === "pay") return payPlan(raw, config, opts);
+  if (intent.kind === "balance") return balancePlan(config, opts);
+  if (intent.kind === "external_wallet") return externalWalletPlan();
   return {
     kind: "unknown",
     summary: "No matching intent.",

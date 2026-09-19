@@ -125,15 +125,14 @@ async function loadSpendSafe(): Promise<SpendEvent[]> {
 export async function chatLiveOpts(config: AppConfig, prompt: string): Promise<ChatOpts> {
   const intent = parseIntent(prompt);
   const opts: ChatOpts = {};
-  const needsSnap =
-    intent.kind === "sweep" || intent.kind === "pay" || intent.kind === "limits";
-  if (!needsSnap) return opts;
-
   const snap = await tryBankrPortfolio(config);
   if (snap) {
+    opts.portfolio = snap;
     let lpValueUsdc = 0n;
+    const needsLp =
+      intent.kind === "sweep" || intent.kind === "pay" || intent.kind === "limits";
     const owner = snap.evmAddress ?? config.treasuryAddress;
-    if (owner) {
+    if (needsLp && owner) {
       try {
         const lp = await readSammLpValueUsdc(owner, publicRpc(config.baseRpcUrl));
         lpValueUsdc = lp.amountUsdc;

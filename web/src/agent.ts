@@ -79,10 +79,16 @@ export async function fetchStatus(): Promise<AgentStatus> {
   return (await res.json()) as AgentStatus;
 }
 
+export const TREASURY_POLL_MS = 15_000;
+
 export async function fetchTreasury(): Promise<TreasuryStatus> {
   const res = await fetch(`${AGENT_URL}/treasury`);
   if (!res.ok) throw new Error("treasury failed");
   return (await res.json()) as TreasuryStatus;
+}
+
+export function emptyTreasury(): TreasuryStatus {
+  return { live: false, treasuryDisplay: null };
 }
 
 export async function fetchFlashOrders(): Promise<FlashOrdersStatus> {

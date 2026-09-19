@@ -100,7 +100,9 @@ describe("handleChat", () => {
   it("handleChat resolves PAY_DEST_1 before allowlist", () => {
     const dest = getAddress("0x1111111111111111111111111111111111111111");
     const config = { ...loadConfig(), payDestinations: [dest] };
-    const reply = handleChat("send 8 USDC to PAY_DEST_1", config);
+    const reply = handleChat("send 8 USDC to PAY_DEST_1", config, {
+      snapshot: { usdcFree: 55_000_000n, usdtFree: 40_000_000n, lpValueUsdc: 0n },
+    });
     expect(reply.kind).toBe("pay");
     expect(reply.plan.action).toBe("pay");
     expect(reply.plan.to).toBe(truncateAddress(dest));
@@ -112,7 +114,9 @@ describe("handleChat", () => {
     const lp = handleChat("lp stocks", config);
     expect(lp.plan.action).toBe("lp_stocks_cli");
     expect(lp.summary).toContain("pnpm bankr:lp");
-    const sweep = handleChat("sweep", config);
+    const sweep = handleChat("sweep", config, {
+      snapshot: { usdcFree: 55_000_000n, usdtFree: 40_000_000n, lpValueUsdc: 0n },
+    });
     expect(sweep.kind).toBe("sweep");
     expect(sweep.plan.action).toBe("add_liquidity");
     const limits = handleChat("limits", config);

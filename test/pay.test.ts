@@ -22,7 +22,9 @@ describe("B2 prompt-to-pay orchestrator", () => {
 
   it("dry-runs 8 USDC to an allowlisted dest", () => {
     const config = { ...loadConfig(), payDestinations: [dest] };
-    const reply = handleChat(`send 8 USDC to ${dest}`, config);
+    const reply = handleChat(`send 8 USDC to ${dest}`, config, {
+      snapshot: { usdcFree: usdc(55), usdtFree: usdc(40), lpValueUsdc: 0n },
+    });
     expect(reply.kind).toBe("pay");
     expect(reply.plan.action).toBe("pay");
     expect(reply.plan.sent).toBe(false);
@@ -103,7 +105,9 @@ describe("B13 chat pay submit helper", () => {
   it("submits allowlisted 8 USDC pay via transferUsdc", async () => {
     const config = payConfig();
     const prompt = `send 8 USDC to ${dest}`;
-    const reply = handleChat(prompt, config);
+    const reply = handleChat(prompt, config, {
+      snapshot: { usdcFree: usdc(55), usdtFree: usdc(40), lpValueUsdc: 0n },
+    });
     const deps = submitDeps();
     const out = await maybeSubmitChatPay(prompt, reply, config, deps);
     expect(deps.transferUsdc).toHaveBeenCalledOnce();

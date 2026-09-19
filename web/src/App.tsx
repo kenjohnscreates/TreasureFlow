@@ -15,6 +15,7 @@ import {
   type FlashOrdersStatus,
   type TreasuryStatus,
   type UnsignedTx,
+  emptyTreasury,
   fetchChallenge,
   fetchFlashOrders,
   fetchFounderOk,
@@ -22,6 +23,7 @@ import {
   fetchTreasury,
   postChat,
   postPause,
+  TREASURY_POLL_MS,
 } from "./agent";
 
 type View = "home" | "orders";
@@ -41,16 +43,23 @@ export function App() {
   const [treasury, setTreasury] = useState<TreasuryStatus | null>(null);
   const [flashOrders, setFlashOrders] = useState<FlashOrdersStatus | null>(null);
   const [chatKey, setChatKey] = useState("");
+  function refreshTreasury() {
+    fetchTreasury()
+      .then(setTreasury)
+      .catch(() => setTreasury(emptyTreasury()));
+  }
   useEffect(() => {
     fetchStatus()
       .then(setStatus)
       .catch(() => setStatus(null));
-    fetchTreasury()
-      .then(setTreasury)
-      .catch(() => setTreasury({ live: false, treasuryDisplay: null }));
     fetchFlashOrders()
       .then(setFlashOrders)
       .catch(() => setFlashOrders(null));
+  }, []);
+  useEffect(() => {
+    refreshTreasury();
+    const id = window.setInterval(refreshTreasury, TREASURY_POLL_MS);
+    return () => window.clearInterval(id);
   }, []);
   useEffect(() => {
     const stage = document.getElementById("stage");
@@ -118,6 +127,11 @@ export function App() {
               {liveAmt(treasury, "usdc")}
               <small>USDC</small>
             </div>
+            <div className="wallet-bals treasury-held">
+              <span>ETH {liveAmt(treasury, "eth")}</span>
+              <span>USDT {liveAmt(treasury, "usdt")}</span>
+              <span>NVDAc {liveAmt(treasury, "nvdac")}</span>
+            </div>
           </div>
           <div className="wallet">
             <div className="tag">External Wallet</div>
@@ -171,6 +185,7 @@ export function App() {
             setChatKey={setChatKey}
             policy={p}
             paused={status?.paused === true}
+            onTreasuryRefresh={refreshTreasury}
           />
         </section>
         <section className={view === "orders" ? "page on" : "page"} id="orders">
@@ -369,7 +384,7 @@ function PauseBar({
 
 function liveAmt(
   treasury: TreasuryStatus | null,
-  key: "usdc" | "usdt" | "nvdac",
+  key: "usdc" | "usdt" | "nvdac" | "eth",
 ): string {
   if (!treasury?.live) return NOT_LIVE;
   return treasury[key] ?? NOT_LIVE;
@@ -385,11 +400,13 @@ function ChatPanel({
   setChatKey,
   policy,
   paused,
+  onTreasuryRefresh,
 }: {
   chatKey: string;
   setChatKey: (value: string) => void;
   policy: AgentStatus["policy"] | undefined;
   paused: boolean;
+  onTreasuryRefresh: () => void;
 }) {
   const chips = [
     { label: "Deposit 20 USDC", prompt: "deposit 20 USDC" },
@@ -419,6 +436,7 @@ function ChatPanel({
     try {
       const reply = await postChat(text);
       setLines((cur) => [...cur, { role: "agent", text: reply.summary }]);
+      onTreasuryRefresh();
       setUnsigned(reply.kind === "deposit" ? (reply.unsignedTx ?? null) : null);
       setEncoded(reply.encodedTxs ?? []);
       if (reply.plan.action === "pay" || reply.plan.action === "unwind_and_pay") {
@@ -494,6 +512,7 @@ function ChatPanel({
             onCancel={cancelConfirm}
             onReply={(summary, sent) => {
               setLines((cur) => [...cur, { role: "agent", text: summary }]);
+              onTreasuryRefresh();
               if (sent) {
                 setPending(null);
                 setChatKey("");
