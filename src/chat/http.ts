@@ -7,7 +7,6 @@ import { handleChat } from "./handle.ts";
 import { chatKeyGate, corsOriginHeader } from "./hosting.ts";
 import { chatLiveOpts, publicFlashOrders, publicTreasury } from "./reads.ts";
 import { publicStatus } from "./status.ts";
-import { vercelWebStatic } from "./static.ts";
 import { maybeSubmitChatPay } from "./submitPay.ts";
 
 const HOST = "127.0.0.1";
@@ -54,8 +53,6 @@ app.post("/chat", async (c) => {
   return c.json(await maybeSubmitChatPay(prompt, reply, config));
 });
 
-app.get("*", vercelWebStatic);
-
 app.onError((err, c) => {
   if (err instanceof AppError) {
     return c.json({ error: err.code, message: err.message }, 400);
@@ -63,7 +60,6 @@ app.onError((err, c) => {
   return c.json({ error: "internal", message: "request failed" }, 500);
 });
 
-export const config = { runtime: "nodejs" };
 export { app };
 export default app;
 
