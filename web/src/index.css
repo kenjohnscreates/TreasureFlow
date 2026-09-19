@@ -63,12 +63,14 @@ body.page-landing {
 }
 
 .top {
-  flex: 0 0 80px;
+  flex: 0 0 auto;
+  min-height: 80px;
   display: grid;
-  grid-template-columns: 280px 1fr auto;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   padding: 0 var(--pad);
   border-bottom: var(--stroke) solid var(--line);
+  column-gap: 16px;
 }
 
 .top img {
@@ -109,10 +111,12 @@ body.page-landing {
 .head-right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  flex-wrap: nowrap;
+  gap: 12px;
   font-size: 15px;
   font-weight: 700;
   color: var(--muted);
+  white-space: nowrap;
 }
 
 .dot {
@@ -212,10 +216,38 @@ body.page-landing {
   font-variant-numeric: tabular-nums;
 }
 
+.wallet .cash {
+  margin-top: 6px;
+  font-size: 56px;
+}
+
 .wallet-connect {
   margin-top: 8px;
   display: flex;
   justify-content: center;
+}
+
+.wallet-ext {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.wallet-bals {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 16px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.wallet-ext .btn {
+  min-height: 40px;
+  padding: 8px 16px;
 }
 
 .page {
@@ -278,14 +310,14 @@ body.page-landing {
 }
 
 #home .chips {
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 #home .chat-head,
 #home .chips,
+#home .chip-block,
 #home .log,
-#home .composer,
-#home .pause-bar {
+#home .composer {
   width: 100%;
 }
 
@@ -447,13 +479,23 @@ td {
   color: var(--muted);
 }
 
+.chip-block {
+  flex: 0 0 auto;
+  width: 100%;
+  margin-top: 4px;
+  padding: 14px 16px;
+  border: var(--stroke) solid var(--line);
+  border-radius: var(--radius);
+  background: #0b0d10;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 10px;
   flex: 0 0 auto;
-  padding: 12px 0;
+  padding: 0;
 }
 
 .chips button {
@@ -563,9 +605,9 @@ td {
 .pause-bar {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 0 var(--pad);
+  align-items: flex-end;
+  gap: 4px;
+  padding: 0;
 }
 
 .pause-bar-row {
@@ -576,10 +618,11 @@ td {
 }
 
 .pause-bar .btn {
-  min-height: 40px;
-  padding: 8px 16px;
+  min-height: 36px;
+  padding: 6px 12px;
   white-space: nowrap;
   flex: 0 0 auto;
+  font-size: 14px;
 }
 
 .pause-bar .composer-key {
@@ -588,30 +631,19 @@ td {
 }
 
 .pause-bar .composer-key input {
-  width: 8.5rem;
+  width: 7.5rem;
+  min-height: 36px;
 }
 
-.chat .pause-bar {
+.top .pause-bar {
   flex: 0 0 auto;
-  align-items: stretch;
-  width: 100%;
-  padding: 10px 0;
-  border-bottom: var(--stroke) solid var(--line);
 }
 
-.chat .pause-bar-row {
-  width: 100%;
-}
-
-.chat .pause-bar-row .composer-key {
-  margin-left: auto;
-}
-
-#orders .pause-bar {
-  align-self: center;
-  width: auto;
-  max-width: 100%;
-  padding: 0;
+.top .pause-bar .muted {
+  font-size: 12px;
+  max-width: 28rem;
+  white-space: normal;
+  text-align: right;
 }
 
 .confirm-modal {

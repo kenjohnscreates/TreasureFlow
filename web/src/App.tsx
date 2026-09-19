@@ -1,8 +1,8 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { type Address } from "viem";
 import { base } from "viem/chains";
 import { useAccount, useSwitchChain, useWalletClient } from "wagmi";
+import { ExternalAddr } from "./externalWallet";
 import {
   FLASH_ORDERS,
   LIVE_RECEIPTS,
@@ -76,167 +76,164 @@ export function App() {
     : FLASH_ORDERS.map((order) => ({ ...order, status: "resting" }));
   return (
     <div className="stage-frame" id="stage-frame">
-    <div className="stage" id="stage">
-      <header className="top">
-        <img src="/logo.svg" alt="TreasureFlow" />
-        <nav>
-          <button
-            type="button"
-            aria-current={view === "home" ? "page" : undefined}
-            onClick={() => setView("home")}
-          >
-            Home
-          </button>
-          <button
-            type="button"
-            aria-current={view === "orders" ? "page" : undefined}
-            onClick={() => setView("orders")}
-          >
-            Limits & Orders
-          </button>
-        </nav>
-        <div className="head-right">
-          <span className="dot" aria-hidden="true" />
-          On Base
-        </div>
-      </header>
-      <section className="wallets">
-        <div className="wallet primary">
-          <div className="tag">Company treasury</div>
-          <h2>TreasureFlow</h2>
-          <aside>
-            <b>{status?.treasuryDisplay ?? "not created"}</b>
-          </aside>
-        </div>
-        <div className="wallet">
-          <div className="tag">External Wallet</div>
-          <h2>Company</h2>
-          <aside>
-            <ExternalAddr />
-          </aside>
-        </div>
-      </section>
-      <section className={view === "home" ? "page on" : "page"} id="home">
-        <div className="stack">
-          <div className="panel">
-            <h3>Balance</h3>
+      <div className="stage" id="stage">
+        <header className="top">
+          <img src="/logo.svg" alt="TreasureFlow" />
+          <nav>
+            <button
+              type="button"
+              aria-current={view === "home" ? "page" : undefined}
+              onClick={() => setView("home")}
+            >
+              Home
+            </button>
+            <button
+              type="button"
+              aria-current={view === "orders" ? "page" : undefined}
+              onClick={() => setView("orders")}
+            >
+              Limits & Orders
+            </button>
+          </nav>
+          <div className="head-right">
+            <PauseBar
+              paused={status?.paused === true}
+              chatKey={chatKey}
+              setChatKey={setChatKey}
+              onStatus={setStatus}
+              showStatus={false}
+            />
+            <span className="dot" aria-hidden="true" />
+            On Base
+          </div>
+        </header>
+        <section className="wallets">
+          <div className="wallet primary">
+            <div className="tag">Company treasury</div>
+            <h2>TreasureFlow</h2>
+            <aside>
+              <b>{status?.treasuryDisplay ?? "not created"}</b>
+            </aside>
             <div className="cash">
               {liveAmt(treasury, "usdc")}
               <small>USDC</small>
             </div>
           </div>
-          <div className="panel grow">
-            <h3>Active positions</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Position</th>
-                  <th>Asset</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Cash</td>
-                  <td>USDC</td>
-                  <td className="mono">{liveAmt(treasury, "usdc")}</td>
-                </tr>
-                <tr>
-                  <td>Held</td>
-                  <td>USDT</td>
-                  <td className="mono">{liveAmt(treasury, "usdt")}</td>
-                </tr>
-                <tr>
-                  <td>Held</td>
-                  <td>NVDAc</td>
-                  <td className="mono">{liveAmt(treasury, "nvdac")}</td>
-                </tr>
-                {treasury?.live && treasury.eth !== undefined ? (
+          <div className="wallet">
+            <div className="tag">External Wallet</div>
+            <h2>Company</h2>
+            <aside>
+              <ExternalAddr usdcToken={status?.tokens.usdc} />
+            </aside>
+          </div>
+        </section>
+        <section className={view === "home" ? "page on" : "page"} id="home">
+          <div className="stack">
+            <div className="panel grow">
+              <h3>Active positions</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Position</th>
+                    <th>Asset</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Cash</td>
+                    <td>USDC</td>
+                    <td className="mono">{liveAmt(treasury, "usdc")}</td>
+                  </tr>
                   <tr>
                     <td>Held</td>
-                    <td>ETH</td>
-                    <td className="mono">{treasury.eth}</td>
+                    <td>USDT</td>
+                    <td className="mono">{liveAmt(treasury, "usdt")}</td>
                   </tr>
-                ) : null}
-              </tbody>
-            </table>
+                  <tr>
+                    <td>Held</td>
+                    <td>NVDAc</td>
+                    <td className="mono">{liveAmt(treasury, "nvdac")}</td>
+                  </tr>
+                  {treasury?.live && treasury.eth !== undefined ? (
+                    <tr>
+                      <td>Held</td>
+                      <td>ETH</td>
+                      <td className="mono">{treasury.eth}</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        <ChatPanel
-          chatKey={chatKey}
-          setChatKey={setChatKey}
-          policy={p}
-          paused={status?.paused === true}
-          onStatus={setStatus}
-        />
-      </section>
-      <section className={view === "orders" ? "page on" : "page"} id="orders">
-        <div className="stack">
-          <PauseBar
-            paused={status?.paused === true}
+          <ChatPanel
             chatKey={chatKey}
             setChatKey={setChatKey}
-            onStatus={setStatus}
+            policy={p}
+            paused={status?.paused === true}
           />
-          <LimitsPanel policy={p} />
-          <div className="panel">
-            <h3>Buy-the-dip orders</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Rung</th>
-                  <th>Price</th>
-                  <th>Qty</th>
-                  <th>Status</th>
-                  <th>Id</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((order) => (
-                  <tr key={order.id}>
-                    <td>{order.rungPct}%</td>
-                    <td className="mono">${order.limitPriceUsd}</td>
-                    <td className="mono">{order.qtyUsdc}</td>
-                    <td>{order.status || "resting"}</td>
-                    <td className="mono">{order.id}</td>
+        </section>
+        <section className={view === "orders" ? "page on" : "page"} id="orders">
+          <div className="stack">
+            <LimitsPanel policy={p} />
+            <div className="panel">
+              <h3>Buy-the-dip orders</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rung</th>
+                    <th>Price</th>
+                    <th>Qty</th>
+                    <th>Status</th>
+                    <th>Id</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="panel grow">
-            <h3>Receipts</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Tx</th>
-                  <th>Note</th>
-                  <th>BaseScan</th>
-                </tr>
-              </thead>
-              <tbody>
-                {LIVE_RECEIPTS.map((receipt) => (
-                  <tr key={receipt.id}>
-                    <td>{receipt.label}</td>
-                    <td className="muted">{receipt.note}</td>
-                    <td>
-                      <a
-                        className="mono"
-                        href={basescanTxUrl(receipt.hash)}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {truncateHash(receipt.hash)}
-                      </a>
-                    </td>
+                </thead>
+                <tbody>
+                  {orders.map((order) => (
+                    <tr key={order.id}>
+                      <td>{order.rungPct}%</td>
+                      <td className="mono">${order.limitPriceUsd}</td>
+                      <td className="mono">{order.qtyUsdc}</td>
+                      <td>{order.status || "resting"}</td>
+                      <td className="mono">{order.id}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="panel grow">
+              <h3>Receipts</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tx</th>
+                    <th>Note</th>
+                    <th>BaseScan</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {LIVE_RECEIPTS.map((receipt) => (
+                    <tr key={receipt.id}>
+                      <td>{receipt.label}</td>
+                      <td className="muted">{receipt.note}</td>
+                      <td>
+                        <a
+                          className="mono"
+                          href={basescanTxUrl(receipt.hash)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {truncateHash(receipt.hash)}
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      </section>
-    </div>
+        </section>
+      </div>
     </div>
   );
 }
@@ -249,9 +246,7 @@ function clampUsd(raw: string | undefined, fallback: number, max: number): numbe
 
 function LimitsPanel({ policy }: { policy: AgentStatus["policy"] | undefined }) {
   const [buffer, setBuffer] = useState(() => clampUsd(policy?.bufferUsdc, 15, 100));
-  const [perCall, setPerCall] = useState(() =>
-    clampUsd(policy?.perCallCapUsdc, 10, 100),
-  );
+  const [perCall, setPerCall] = useState(() => clampUsd(policy?.perCallCapUsdc, 10, 100));
   const [daily, setDaily] = useState(() => clampUsd(policy?.dailyCapUsdc, 30, 100));
   useEffect(() => {
     setBuffer(clampUsd(policy?.bufferUsdc, 15, 100));
@@ -385,26 +380,16 @@ function shortAddr(addr: string | null | undefined): string {
   return addr.slice(0, 6) + "..." + addr.slice(-4);
 }
 
-function ExternalAddr() {
-  return (
-    <div className="wallet-connect">
-      <ConnectButton showBalance={false} />
-    </div>
-  );
-}
-
 function ChatPanel({
   chatKey,
   setChatKey,
   policy,
   paused,
-  onStatus,
 }: {
   chatKey: string;
   setChatKey: (value: string) => void;
   policy: AgentStatus["policy"] | undefined;
   paused: boolean;
-  onStatus: (status: AgentStatus) => void;
 }) {
   const chips = [
     { label: "Deposit 20 USDC", prompt: "deposit 20 USDC" },
@@ -479,13 +464,6 @@ function ChatPanel({
           {paused ? "Paused" : "Live"}
         </span>
       </header>
-      <PauseBar
-        paused={paused}
-        chatKey={chatKey}
-        setChatKey={setChatKey}
-        onStatus={onStatus}
-        showStatus={false}
-      />
       <div className="log">
         {lines.map((line, i) => (
           <div className={"msg " + line.role} key={i}>
@@ -524,18 +502,20 @@ function ChatPanel({
           />
         ) : null}
       </div>
-      <div className="chips">
-        {chips.map((chip) => (
-          <button
-            key={chip.label}
-            type="button"
-            disabled={busy}
-            onClick={() => void send(chip.prompt)}
-          >
-            {chip.label}
-          </button>
-        ))}
-      </div>
+      <section className="chip-block" aria-label="Quick actions">
+        <div className="chips">
+          {chips.map((chip) => (
+            <button
+              key={chip.label}
+              type="button"
+              disabled={busy}
+              onClick={() => void send(chip.prompt)}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      </section>
       <form className="composer" onSubmit={onSubmit}>
         <input
           value={prompt}
@@ -605,7 +585,12 @@ function ConfirmModal({
       </p>
       {err ? <p className="muted">{err}</p> : null}
       <div className="row">
-        <button className="btn" type="button" disabled={busy} onClick={() => void confirm()}>
+        <button
+          className="btn"
+          type="button"
+          disabled={busy}
+          onClick={() => void confirm()}
+        >
           Confirm
         </button>
         <button className="btn ghost" type="button" disabled={busy} onClick={onCancel}>
