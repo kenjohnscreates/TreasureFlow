@@ -47,6 +47,8 @@ export type ChatReply = {
 export type TreasuryStatus = {
   live: boolean;
   eth?: string;
+  ethUsd?: string;
+  ethUsdValue?: string;
   usdc?: string;
   usdt?: string;
   nvdac?: string;

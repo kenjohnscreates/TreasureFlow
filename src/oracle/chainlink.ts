@@ -27,12 +27,20 @@ export const CHAINLINK_ABI = [
   },
 ] as const;
 
-/** Base cbBTC/USD heartbeat is 1200s. Fail closed at 2x. */
+/** Base cbBTC/USD and ETH/USD heartbeat is 1200s. Fail closed at 2x. */
 export const ORACLE_MAX_AGE_S = 2400;
 const SPOT_MIN = 1_000;
 const SPOT_MAX = 1_000_000;
 
-export async function readSpotUsd(feed: Address, rpcUrl = ""): Promise<number> {
+/**
+ * ETH/USD fail-closed range. BTC `readSpotUsd` uses SPOT_MIN=1000 / SPOT_MAX=1e6,
+ * which would reject a valid ETH print below $1,000. ETH bounds are 50-100_000.
+ * Stale or non-positive answers still fail closed. Heartbeat 2x 1200s is ORACLE_MAX_AGE_S.
+ */
+export const ETH_SPOT_MIN = 50;
+export const ETH_SPOT_MAX = 100_000;
+
+async function readLatestSpot(feed: Address, rpcUrl: string): Promise<number> {
   const client = createPublicClient({
     chain: base,
     transport: http(publicRpc(rpcUrl)),
@@ -52,9 +60,38 @@ export async function readSpotUsd(feed: Address, rpcUrl = ""): Promise<number> {
   const ageS = Date.now() / 1000 - Number(updatedAt);
   if (ageS > ORACLE_MAX_AGE_S)
     throw new AppError("oracle_stale", "Chainlink answer is stale");
-  const spot = btcSpotFromAnswer(answer, decimals);
+  return btcSpotFromAnswer(answer, decimals);
+}
+
+export async function readSpotUsd(feed: Address, rpcUrl = ""): Promise<number> {
+  const spot = await readLatestSpot(feed, rpcUrl);
   if (spot < SPOT_MIN || spot > SPOT_MAX) {
     throw new AppError("oracle_range", "Chainlink spot is outside the expected range");
   }
   return spot;
+}
+
+export async function readEthSpotUsd(feed: Address, rpcUrl: string): Promise<number> {
+  if (!rpcUrl)
+    throw new AppError("oracle_rpc", "BASE_RPC_URL missing");
+  const spot = await readLatestSpot(feed, rpcUrl);
+  if (spot < ETH_SPOT_MIN || spot > ETH_SPOT_MAX) {
+    throw new AppError("oracle_range", "Chainlink ETH spot is outside the expected range");
+  }
+  return spot;
+}
+
+export function formatUsdDecimal(n: number): string {
+  if (!Number.isFinite(n) || n < 0) {
+    throw new AppError("oracle_range", "USD decimal is not finite");
+  }
+  return n.toFixed(8).replace(/\.?0+$/, "") || "0";
+}
+
+export function ethNotionalUsd(ethAmount: string, spotUsd: number): string | undefined {
+  const eth = Number(ethAmount);
+  if (!Number.isFinite(eth) || eth < 0) return undefined;
+  const value = eth * spotUsd;
+  if (!Number.isFinite(value) || value < 0) return undefined;
+  return formatUsdDecimal(value);
 }

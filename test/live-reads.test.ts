@@ -62,6 +62,8 @@ describe("treasury live:false without keys", () => {
     const body = await publicTreasury({ ...loadConfig(), bankrApiKey: "" });
     expect(body.live).toBe(false);
     expect(body.eth).toBeUndefined();
+    expect(body.ethUsd).toBeUndefined();
+    expect(body.ethUsdValue).toBeUndefined();
     expect(body.usdc).toBeUndefined();
     expect(body.usdt).toBeUndefined();
     expect(body.nvdac).toBeUndefined();

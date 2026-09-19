@@ -139,7 +139,7 @@ export function App() {
               <small>USDC</small>
             </div>
             <div className="wallet-bals treasury-held">
-              <span>ETH {liveAmt(treasury, "eth")}</span>
+              <span>ETH {liveEthLine(treasury)}</span>
               <span>USDT {liveAmt(treasury, "usdt")}</span>
               <span>NVDAc {liveAmt(treasury, "nvdac")}</span>
             </div>
@@ -399,6 +399,19 @@ function liveAmt(
 ): string {
   if (!treasury?.live) return NOT_LIVE;
   return treasury[key] ?? NOT_LIVE;
+}
+
+function fmtUsd(raw: string): string {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return raw;
+  return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+
+function liveEthLine(treasury: TreasuryStatus | null): string {
+  if (!treasury?.live) return NOT_LIVE;
+  const eth = treasury.eth ?? NOT_LIVE;
+  if (treasury.ethUsdValue === undefined) return eth;
+  return `${eth} ≈ $${fmtUsd(treasury.ethUsdValue)}`;
 }
 
 function shortAddr(addr: string | null | undefined): string {

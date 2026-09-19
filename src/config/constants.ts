@@ -19,6 +19,8 @@ export const BASE = {
   cbBtc: "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf" as Address,
   // Chainlink Base cbBTC / USD proxy (heartbeat 1200s, 8 decimals).
   btcUsdFeed: "0x07DA0E54543a844a80ABE69c8A12F22B3aA59f9D" as Address,
+  // Chainlink Base ETH / USD standard proxy (heartbeat 1200s, 8 decimals).
+  ethUsdFeed: "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70" as Address,
 } as const;
 
 export const BASE_SEPOLIA = {

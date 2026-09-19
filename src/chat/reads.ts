@@ -17,18 +17,30 @@ import { sizeLiveLimits } from "../flash/size.ts";
 import { log } from "../log.ts";
 import { remainingDailyCap, type SpendEvent } from "../policy/math.ts";
 import { loadSpend } from "../policy/spendLog.ts";
-import { readSpotUsd } from "../oracle/chainlink.ts";
+import {
+  ethNotionalUsd,
+  formatUsdDecimal,
+  readEthSpotUsd,
+  readSpotUsd,
+} from "../oracle/chainlink.ts";
 import { parseIntent } from "./intent.ts";
 import type { ChatOpts } from "./handle.ts";
 
 export type PublicTreasury = {
   live: boolean;
   eth?: string;
+  ethUsd?: string;
+  ethUsdValue?: string;
   usdc?: string;
   usdt?: string;
   nvdac?: string;
   tokenCount?: number;
   treasuryDisplay: string | null;
+};
+
+export type PublicTreasuryDeps = {
+  snap?: BankrPortfolioSnap;
+  readEthSpotUsd?: typeof readEthSpotUsd;
 };
 
 export type PublicFlashOrder = {
@@ -75,10 +87,49 @@ export async function tryBankrPortfolio(
   }
 }
 
-export async function publicTreasury(config: AppConfig): Promise<PublicTreasury> {
-  const snap = await tryBankrPortfolio(config);
+async function withEthUsd(
+  body: PublicTreasury,
+  config: AppConfig,
+  readFn: typeof readEthSpotUsd,
+): Promise<PublicTreasury> {
+  if (!body.live) return body;
+  if (!config.baseRpcUrl) {
+    log("eth_usd_oracle", { live: false, code: "missing_rpc" });
+    return body;
+  }
+  try {
+    const spot = await readFn(BASE.ethUsdFeed, config.baseRpcUrl);
+    if (!Number.isFinite(spot) || spot <= 0) {
+      log("eth_usd_oracle", { live: false, code: "oracle_range" });
+      return body;
+    }
+    const ethUsd = formatUsdDecimal(spot);
+    const next: PublicTreasury = { ...body, ethUsd };
+    if (body.eth !== undefined) {
+      const value = ethNotionalUsd(body.eth, spot);
+      if (value !== undefined) next.ethUsdValue = value;
+    }
+    log("eth_usd_oracle", {
+      live: true,
+      ...(body.treasuryDisplay ? { treasury: body.treasuryDisplay } : {}),
+      ethUsd,
+      ...(next.ethUsdValue !== undefined ? { ethUsdValue: next.ethUsdValue } : {}),
+    });
+    return next;
+  } catch (err) {
+    const code = err instanceof AppError ? err.code : "oracle_http";
+    log("eth_usd_oracle", { live: false, code });
+    return body;
+  }
+}
+
+export async function publicTreasury(
+  config: AppConfig,
+  deps: PublicTreasuryDeps = {},
+): Promise<PublicTreasury> {
+  const snap = deps.snap ?? (await tryBankrPortfolio(config));
   if (!snap) return { live: false, treasuryDisplay: treasuryDisplay(config) };
-  return {
+  const body: PublicTreasury = {
     live: true,
     eth: snap.eth,
     usdc: snap.usdc,
@@ -87,6 +138,7 @@ export async function publicTreasury(config: AppConfig): Promise<PublicTreasury>
     tokenCount: snap.tokenCount,
     treasuryDisplay: treasuryDisplay(config, snap),
   };
+  return withEthUsd(body, config, deps.readEthSpotUsd ?? readEthSpotUsd);
 }
 
 function staticFlashOrders(): PublicFlashOrder[] {
