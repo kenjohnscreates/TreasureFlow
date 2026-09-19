@@ -502,6 +502,17 @@ function ChatPanel({
           />
         ) : null}
       </div>
+      <form className="composer" onSubmit={onSubmit}>
+        <input
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          aria-label="Ask TreasureFlow"
+          placeholder="Deposit, sweep, or send"
+        />
+        <button className="btn" type="submit" disabled={busy}>
+          Send
+        </button>
+      </form>
       <section className="chip-block" aria-label="Quick actions">
         <div className="chips">
           {chips.map((chip) => (
@@ -516,17 +527,6 @@ function ChatPanel({
           ))}
         </div>
       </section>
-      <form className="composer" onSubmit={onSubmit}>
-        <input
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          aria-label="Ask TreasureFlow"
-          placeholder="Deposit, sweep, or send"
-        />
-        <button className="btn" type="submit" disabled={busy}>
-          Send
-        </button>
-      </form>
     </aside>
   );
 }
