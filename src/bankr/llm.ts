@@ -92,7 +92,7 @@ export function llmSystemPrompt(live?: LlmBalanceHint): string {
   const caps =
     "Company treasury only. Founder signs deposits. Caps: buffer 15, per-call 10, daily 30, hard stop 15. No performance claims. No em dashes.";
   const lines =
-    "Reply with exactly one canonical line our parser accepts, nothing else: deposit N USDC, send N USDC to PAY_DEST_1, sweep, lp stocks, buy 1 USDC of cbBTC 0.01 percent below spot, how much USDC in the treasury, or UNKNOWN.";
+    "Reply with exactly one canonical line our parser accepts, nothing else: deposit N USDC, deposit $N USDC, send N USDC to PAY_DEST_1, sweep, lp stocks, buy 1 USDC of cbBTC 0.01 percent below spot, how much USDC in the treasury, or UNKNOWN.";
   if (!live) return `${caps} ${lines}`;
   const treasury = live.treasuryDisplay ? ` Treasury ${live.treasuryDisplay}.` : "";
   return `${caps} Live: USDC ${live.usdc}, USDT ${live.usdt}, NVDAc ${live.nvdac}, ETH ${live.eth}.${treasury} ${lines}`;

@@ -43,8 +43,8 @@ export type Intent =
   | ExternalWalletIntent
   | RejectedIntent;
 
-const PAY_RE = /send\s+([\d,]+(?:\.\d+)?)\s*usdc\s+to\s+(0x[a-fA-F0-9]{40}|PAY_DEST_[12])/i;
-const DEPOSIT_RE = /deposit\s+([\d,]+(?:\.\d+)?)\s*(usdc|nvdac?)\b/i;
+const PAY_RE = /send\s+\$?([\d,]+(?:\.\d+)?)\s*usdc\s+to\s+(0x[a-fA-F0-9]{40}|PAY_DEST_[12])/i;
+const DEPOSIT_RE = /deposit\s+\$?([\d,]+(?:\.\d+)?)\s*(usdc|nvdac?)\b/i;
 const FROM_EXT_DEPOSIT_RE =
   /send\s+\$?([\d,]+(?:\.\d+)?)\s+(?:usdc\s+)?from\s+(?:my\s+)?(?:external(?:\s+wallet)?|wallet(?:\s*\/\s*external)?)\s+to\s+(?:the\s+)?treasury/i;
 const LP_RE = /^\s*lp(?:\s+(?:stocks|nvdac?))?\s*$/i;

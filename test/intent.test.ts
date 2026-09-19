@@ -55,6 +55,27 @@ describe("parseIntent", () => {
     }
   });
 
+  it("parses optional $ before deposit and pay amounts", () => {
+    const deposit = parseIntent("deposit $5 usdc");
+    expect(deposit.kind).toBe("deposit");
+    if (deposit.kind === "deposit") {
+      expect(deposit.token).toBe("USDC");
+      expect(deposit.amount).toBe(5_000_000n);
+    }
+    const cents = parseIntent("deposit $5.50 USDC");
+    expect(cents.kind).toBe("deposit");
+    if (cents.kind === "deposit") {
+      expect(cents.token).toBe("USDC");
+      expect(cents.amount).toBe(5_500_000n);
+    }
+    const pay = parseIntent("send $8 USDC to PAY_DEST_1");
+    expect(pay.kind).toBe("pay");
+    if (pay.kind === "pay") {
+      expect(pay.amountUsdc).toBe(8_000_000n);
+      expect(pay.to).toBe("PAY_DEST_1");
+    }
+  });
+
   it("parses sweep, lp stocks, demo flash, and limits", () => {
     expect(parseIntent("sweep").kind).toBe("sweep");
     expect(parseIntent("lp").kind).toBe("lp_stocks");
