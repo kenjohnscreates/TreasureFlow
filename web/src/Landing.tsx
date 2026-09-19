@@ -348,7 +348,17 @@ export function Landing() {
   return (
     <div className="landing">
       <header className="landing-top">
-        <img src="/logo.svg" alt="TreasureFlow" />
+        <a
+          href="https://treasureflow.vercel.app/"
+          aria-label="TreasureFlow home"
+          onClick={(e) => {
+            e.preventDefault();
+            window.history.pushState({}, "", "/");
+            window.dispatchEvent(new PopStateEvent("popstate"));
+          }}
+        >
+          <img src="/logo.svg" alt="TreasureFlow" />
+        </a>
       </header>
       <main className="landing-hero">
         <div className="landing-copy">

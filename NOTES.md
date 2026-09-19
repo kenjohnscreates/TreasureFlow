@@ -390,3 +390,7 @@ Running build notes. One entry per task.
 - Nav: Home, Limits & Orders, **Approved wallets**, then disabled **Lend & Borrow** (`title="Coming later"`, existing grey `button:disabled`). Lend does not set a view and has no page. Caps unchanged. Chat / Flash / RainbowKit / vercel.json untouched.
 - Approved wallets page (`#allowlist`) lists the two `GET /status` `payDestDisplays` (truncated `PAY_DEST_1` / `PAY_DEST_2`). Copy: The agent can only send to these wallets. Founder dest is labeled Founder when it matches `founderDisplay`. Full dests stay off `/status`. Wallets row (treasury + external) stays visible.
 - Tests 184. `test/b41.test.ts` source + truncated dests + caps 15/10/30/15. Browser `127.0.0.1:5174` `/app`: nav Home / Limits & Orders / Approved wallets / grey **Lend & Borrow** (disabled, click refused). Approved wallets: Founder `0xD428...6d2A`, Wallet 2 `0x4D43...432f`, copy The agent can only send to these wallets. Limits sliders 15/10/30 still work. No `--live`. No Flash place/cancel. Treasury `0x4c9D...a6c2`. No secrets.
+
+## Header logo to landing
+
+- dApp and landing header logos are links to `https://treasureflow.vercel.app/`. In-app click uses `pushState("/")` so `/app` returns to the landing without a full reload. Caps unchanged.

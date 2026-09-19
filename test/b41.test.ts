@@ -44,6 +44,15 @@ describe("B41 approved wallets page and Lend cue", () => {
     expect(JSON.stringify(status)).not.toContain(dest2);
   });
 
+  it("header logo links to the TreasureFlow home URL", () => {
+    const app = readFileSync(join(root, "web/src/App.tsx"), "utf8");
+    const landing = readFileSync(join(root, "web/src/Landing.tsx"), "utf8");
+    expect(app).toContain('href="https://treasureflow.vercel.app/"');
+    expect(landing).toContain('href="https://treasureflow.vercel.app/"');
+    expect(app).toContain('aria-label="TreasureFlow home"');
+    expect(app).toContain('window.history.pushState({}, "", "/")');
+  });
+
   it("caps stay 15/10/30/15", () => {
     const { policy } = loadConfig();
     expect(formatUnits(policy.bufferUsdc, USDC_DECIMALS)).toBe("15");

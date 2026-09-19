@@ -99,7 +99,17 @@ export function App() {
     <div className="stage-frame" id="stage-frame">
       <div className="stage" id="stage">
         <header className="top">
-          <img src="/logo.svg" alt="TreasureFlow" />
+          <a
+            href="https://treasureflow.vercel.app/"
+            aria-label="TreasureFlow home"
+            onClick={(e) => {
+              e.preventDefault();
+              window.history.pushState({}, "", "/");
+              window.dispatchEvent(new PopStateEvent("popstate"));
+            }}
+          >
+            <img src="/logo.svg" alt="TreasureFlow" />
+          </a>
           <nav>
             <button
               type="button"

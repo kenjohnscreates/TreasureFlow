@@ -73,6 +73,12 @@ body.page-landing {
   column-gap: 16px;
 }
 
+.top > a {
+  display: block;
+  line-height: 0;
+  text-decoration: none;
+}
+
 .top img {
   display: block;
   height: 44px;
@@ -742,6 +748,12 @@ td {
   justify-content: space-between;
   min-height: 76px;
   border-bottom: var(--stroke) solid var(--line);
+}
+
+.landing-top a {
+  display: block;
+  line-height: 0;
+  text-decoration: none;
 }
 
 .landing-top img {
