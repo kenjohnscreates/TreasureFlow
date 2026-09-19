@@ -30,7 +30,7 @@ import { dynamicEnabled } from "./dynamicClient";
 
 const CHAT_KEY_STORAGE = "treasureflow-chat-key";
 
-type View = "home" | "orders" | "limits";
+type View = "home" | "orders";
 type LogLine = { role: "you" | "agent"; text: string };
 
 const NOT_LIVE = "--";
@@ -84,13 +84,6 @@ export function App() {
             onClick={() => setView("orders")}
           >
             Orders
-          </button>
-          <button
-            type="button"
-            aria-current={view === "limits" ? "page" : undefined}
-            onClick={() => setView("limits")}
-          >
-            Limits
           </button>
           <button type="button" disabled>
             Lend
@@ -167,6 +160,7 @@ export function App() {
       </section>
       <section className={view === "orders" ? "page on" : "page"} id="orders">
         <div className="stack">
+          <LimitsPanel policy={p} />
           <div className="panel">
             <h3>Buy-the-dip orders</h3>
             <table>
@@ -223,9 +217,6 @@ export function App() {
             </table>
           </div>
         </div>
-      </section>
-      <section className={view === "limits" ? "page on" : "page"} id="limits">
-        <LimitsPanel policy={p} />
       </section>
     </div>
   );

@@ -202,3 +202,13 @@ Running build notes. One entry per task.
 - Browser `127.0.0.1:5174` `/app` vs agent `8788`: Home External Wallet / Company, no You sign, one Connect wallet, no header Connect. Orders: no dip copy; stack dx/dw 0 vs wallet cards; last receipts row inside panel (left/right/bottom bleed negative); five BaseScan links unclipped. Limits 15 / 10 / 30. Lend disabled. Treasury truncated `0x4c9D...a6c2`.
 - No new tests. No commit. Runtime git not touched.
 - Assumed: already-running Vite 5174 / agent 8788. Not verified: connected Disconnect click; native 1920 desktop wrap (automation viewport was the scaled 1920 stage).
+
+## B20 combine Orders + Limits
+
+- Product only: `web/src/App.tsx`, `web/src/index.css`. Landing untouched. Caps unchanged. Limits sliders still local React only (no persist, no POST). Chat still does not submit sweep/LP/Flash. No `--live`. No Flash place/cancel. No live pay POST.
+- Nav: Limits tab removed. Home, Orders, Lend (disabled). View type is `"home" | "orders"` (no `"limits"`). Standalone `#limits` page gone. Orders is the combined page.
+- Orders under the always-visible wallet row, top to bottom: three limit slider cards (Keep this much cash / Max per payment / Left to send today, same copy), then Buy-the-dip orders, then Receipts. Home stays Balance / positions / chat; no limits row on Home.
+- Width: `#orders .limits` fills the Orders stack `max-width: calc(640px * 2 + var(--gap))` (1304px). Three equal columns + `--gap`, centered with the two 640px wallet cards and the order panels. Not full-bleed 1920. `#orders .panel` is `flex: 0 0 auto` so table last rows stay inside the rounded box; stack may scroll.
+- Browser `127.0.0.1:5174` `/app` vs agent `8788`: nav Home / Orders / Lend disabled, no Limits tab. Home: External Wallet / Company, no You sign, no header Connect, no Send 50, Balance + positions + chat, no sliders. Orders: wallet span 1304 = limits 1304 = stack 1304; limit cards 419/419/419; sliders 15/10/30 then local cash 8 with no fetch; three ACCEPTED rungs; last receipts row inside panel (`bottomInside` 4.7, Flash USDC approve unclipped). Treasury truncated `0x4c9D...a6c2`.
+- No new tests. No commit. Runtime git not touched.
+- Assumed: already-running Vite 5174 / agent 8788. Not verified: native 1920 desktop wrap (automation viewport scaled the 1920 stage).
