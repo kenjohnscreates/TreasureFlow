@@ -49,6 +49,9 @@ export const LIVE_RECEIPTS: readonly LiveReceipt[] = [
   },
 ];
 
+/** B3 Slipstream NVDAc NFT. First-party id, same pattern as FLASH_ORDERS. */
+export const SLIPSTREAM_NVDA_NFT_ID = "6356494";
+
 export const FLASH_ORDERS: readonly FlashOrderEvidence[] = [
   {
     id: "7863b457-c132-4f6d-bc01-0925dd32d6ee",

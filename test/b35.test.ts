@@ -78,6 +78,14 @@ describe("B35 ETH/USD feed", () => {
 });
 
 describe("B35 GET /treasury ETH USD", () => {
+  const skipLp = {
+    readNvdaSpotUsd: async () => {
+      throw new AppError("oracle_stale", "skip");
+    },
+    readSammLp: async () => ({ liquidity: 0n, amountUsdc: 0n, amountUsdt: 0n }),
+    readSlipstream: async () => [],
+  };
+
   it("omits ethUsd / ethUsdValue when BASE_RPC_URL is empty", async () => {
     const readEth = vi.fn(async () => 4000);
     const body = await publicTreasury(cfg({ baseRpcUrl: "" }), {
@@ -99,6 +107,7 @@ describe("B35 GET /treasury ETH USD", () => {
       readEthSpotUsd: async () => {
         throw new AppError("oracle_stale", "Chainlink answer is stale");
       },
+      ...skipLp,
     });
     expect(body.live).toBe(true);
     expect(body.eth).toBe("0.01");
@@ -117,6 +126,7 @@ describe("B35 GET /treasury ETH USD", () => {
         expect(feed).toBe(BASE.ethUsdFeed);
         return 4000;
       },
+      ...skipLp,
     });
     expect(body.live).toBe(true);
     expect(body.eth).toBe("0.01");

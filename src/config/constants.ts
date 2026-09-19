@@ -21,6 +21,9 @@ export const BASE = {
   btcUsdFeed: "0x07DA0E54543a844a80ABE69c8A12F22B3aA59f9D" as Address,
   // Chainlink Base ETH / USD standard proxy (heartbeat 1200s, 8 decimals).
   ethUsdFeed: "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70" as Address,
+  // Chainlink Base Coinbase NVDA proxy (8 decimals, 0.5% / 24h heartbeat, total-return).
+  // docs/oracles/b20-tokenized-stocks.md
+  nvdaUsdFeed: "0x04689a41629776563E6822F76f2e57D148d28513" as Address,
 } as const;
 
 export const BASE_SEPOLIA = {

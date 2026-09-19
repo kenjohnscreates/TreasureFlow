@@ -44,6 +44,14 @@ export type ChatReply = {
   message?: string;
 };
 
+export type SlipstreamLpStatus = {
+  tokenId: string;
+  staked: boolean;
+  usd?: string;
+  amountUsdc?: string;
+  amountNvdac?: string;
+};
+
 export type TreasuryStatus = {
   live: boolean;
   eth?: string;
@@ -52,8 +60,14 @@ export type TreasuryStatus = {
   usdc?: string;
   usdt?: string;
   nvdac?: string;
+  nvdacUsd?: string;
+  nvdacUsdValue?: string;
   tokenCount?: number;
   treasuryDisplay: string | null;
+  totalUsd?: string;
+  sammLpUsdc?: string;
+  sammLpUsdt?: string;
+  slipstream?: SlipstreamLpStatus[];
 };
 
 export type FlashOrderLive = {

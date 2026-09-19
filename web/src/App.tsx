@@ -135,8 +135,8 @@ export function App() {
               <b>{status?.treasuryDisplay ?? "not created"}</b>
             </aside>
             <div className="cash">
-              {liveAmt(treasury, "usdc")}
-              <small>USDC</small>
+              {liveTotalUsd(treasury)}
+              <small>USD</small>
             </div>
             <div className="wallet-bals treasury-held">
               <span>ETH {liveEthLine(treasury)}</span>
@@ -187,6 +187,20 @@ export function App() {
                       <td className="mono">{treasury.eth}</td>
                     </tr>
                   ) : null}
+                  {hasSammLp(treasury) ? (
+                    <tr>
+                      <td>LP</td>
+                      <td>USDC/USDT sAMM</td>
+                      <td className="mono">{sammLine(treasury)}</td>
+                    </tr>
+                  ) : null}
+                  {(treasury?.live ? treasury.slipstream : undefined)?.map((row) => (
+                    <tr key={row.tokenId}>
+                      <td>LP</td>
+                      <td>NVDAc Slipstream</td>
+                      <td className="mono">{slipstreamLine(row)}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -399,6 +413,35 @@ function liveAmt(
 ): string {
   if (!treasury?.live) return NOT_LIVE;
   return treasury[key] ?? NOT_LIVE;
+}
+
+function liveTotalUsd(treasury: TreasuryStatus | null): string {
+  if (!treasury?.live || treasury.totalUsd === undefined) return NOT_LIVE;
+  return fmtUsd(treasury.totalUsd);
+}
+
+function hasSammLp(treasury: TreasuryStatus | null): treasury is TreasuryStatus {
+  if (!treasury?.live) return false;
+  if (treasury.sammLpUsdc === undefined && treasury.sammLpUsdt === undefined) return false;
+  const usdc = Number(treasury.sammLpUsdc ?? "0");
+  const usdt = Number(treasury.sammLpUsdt ?? "0");
+  return (Number.isFinite(usdc) && usdc > 0) || (Number.isFinite(usdt) && usdt > 0);
+}
+
+function sammLine(treasury: TreasuryStatus): string {
+  const usdc = treasury.sammLpUsdc ?? "0";
+  const usdt = treasury.sammLpUsdt ?? "0";
+  const pair = `${usdc} USDC + ${usdt} USDT`;
+  const usd = Number(usdc) + Number(usdt);
+  if (!Number.isFinite(usd) || usd <= 0) return pair;
+  return `${pair} ≈ $${fmtUsd(String(usd))}`;
+}
+
+function slipstreamLine(row: { tokenId: string; staked: boolean; usd?: string }): string {
+  let line = `NFT #${row.tokenId}`;
+  if (row.staked) line += " staked";
+  if (row.usd !== undefined) line += ` ≈ $${fmtUsd(row.usd)}`;
+  return line;
 }
 
 function fmtUsd(raw: string): string {

@@ -64,6 +64,9 @@ describe("treasury live:false without keys", () => {
     expect(body.eth).toBeUndefined();
     expect(body.ethUsd).toBeUndefined();
     expect(body.ethUsdValue).toBeUndefined();
+    expect(body.totalUsd).toBeUndefined();
+    expect(body.sammLpUsdc).toBeUndefined();
+    expect(body.slipstream).toBeUndefined();
     expect(body.usdc).toBeUndefined();
     expect(body.usdt).toBeUndefined();
     expect(body.nvdac).toBeUndefined();

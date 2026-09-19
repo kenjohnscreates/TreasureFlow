@@ -29,6 +29,12 @@ export const CHAINLINK_ABI = [
 
 /** Base cbBTC/USD and ETH/USD heartbeat is 1200s. Fail closed at 2x. */
 export const ORACLE_MAX_AGE_S = 2400;
+/**
+ * Coinbase NVDA total-return feed (docs/oracles/b20-tokenized-stocks.md):
+ * 0.5% / 24h heartbeat, holds last close on weekends. Fail closed at 2x 24h.
+ * Do not reuse ETH/BTC 2400s (that omits a valid weekend print).
+ */
+export const NVDA_ORACLE_MAX_AGE_S = 48 * 60 * 60;
 const SPOT_MIN = 1_000;
 const SPOT_MAX = 1_000_000;
 
@@ -40,10 +46,18 @@ const SPOT_MAX = 1_000_000;
 export const ETH_SPOT_MIN = 50;
 export const ETH_SPOT_MAX = 100_000;
 
-async function readLatestSpot(feed: Address, rpcUrl: string): Promise<number> {
+/** Display-only equity bounds. Fail closed; not a trading gate. */
+export const NVDA_SPOT_MIN = 1;
+export const NVDA_SPOT_MAX = 10_000;
+
+async function readLatestSpot(
+  feed: Address,
+  rpcUrl: string,
+  maxAgeS = ORACLE_MAX_AGE_S,
+): Promise<number> {
   const client = createPublicClient({
     chain: base,
-    transport: http(publicRpc(rpcUrl)),
+    transport: http(publicRpc(rpcUrl), { retryCount: 2, retryDelay: 300 }),
   });
   const [round, decimals] = await Promise.all([
     client.readContract({
@@ -58,7 +72,7 @@ async function readLatestSpot(feed: Address, rpcUrl: string): Promise<number> {
   if (answer <= 0n)
     throw new AppError("oracle_stale", "Chainlink answer is not positive");
   const ageS = Date.now() / 1000 - Number(updatedAt);
-  if (ageS > ORACLE_MAX_AGE_S)
+  if (ageS > maxAgeS)
     throw new AppError("oracle_stale", "Chainlink answer is stale");
   return btcSpotFromAnswer(answer, decimals);
 }
@@ -81,6 +95,16 @@ export async function readEthSpotUsd(feed: Address, rpcUrl: string): Promise<num
   return spot;
 }
 
+export async function readNvdaSpotUsd(feed: Address, rpcUrl: string): Promise<number> {
+  if (!rpcUrl)
+    throw new AppError("oracle_rpc", "BASE_RPC_URL missing");
+  const spot = await readLatestSpot(feed, rpcUrl, NVDA_ORACLE_MAX_AGE_S);
+  if (spot < NVDA_SPOT_MIN || spot > NVDA_SPOT_MAX) {
+    throw new AppError("oracle_range", "Chainlink NVDA spot is outside the expected range");
+  }
+  return spot;
+}
+
 export function formatUsdDecimal(n: number): string {
   if (!Number.isFinite(n) || n < 0) {
     throw new AppError("oracle_range", "USD decimal is not finite");
@@ -89,9 +113,17 @@ export function formatUsdDecimal(n: number): string {
 }
 
 export function ethNotionalUsd(ethAmount: string, spotUsd: number): string | undefined {
-  const eth = Number(ethAmount);
-  if (!Number.isFinite(eth) || eth < 0) return undefined;
-  const value = eth * spotUsd;
+  return notionalUsd(ethAmount, spotUsd);
+}
+
+export function nvdacNotionalUsd(nvdacAmount: string, spotUsd: number): string | undefined {
+  return notionalUsd(nvdacAmount, spotUsd);
+}
+
+function notionalUsd(amount: string, spotUsd: number): string | undefined {
+  const qty = Number(amount);
+  if (!Number.isFinite(qty) || qty < 0) return undefined;
+  const value = qty * spotUsd;
   if (!Number.isFinite(value) || value < 0) return undefined;
   return formatUsdDecimal(value);
 }

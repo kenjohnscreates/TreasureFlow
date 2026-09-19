@@ -1,5 +1,9 @@
-import { formatUnits } from "viem";
-import { publicRpc, readSammLpValueUsdc } from "../aerodrome/quote.ts";
+import { formatUnits, type Address } from "viem";
+import { publicRpc, readSammLpValueUsdc, PUBLIC_RPCS, type SammLpPosition } from "../aerodrome/quote.ts";
+import {
+  readNvdaSlipstreamLps,
+  type SlipstreamLp,
+} from "../aerodrome/slipstream.ts";
 import { getWalletPortfolio } from "../bankr/client.ts";
 import {
   parsePortfolio,
@@ -20,11 +24,15 @@ import { loadSpend } from "../policy/spendLog.ts";
 import {
   ethNotionalUsd,
   formatUsdDecimal,
+  nvdacNotionalUsd,
   readEthSpotUsd,
+  readNvdaSpotUsd,
   readSpotUsd,
 } from "../oracle/chainlink.ts";
 import { parseIntent } from "./intent.ts";
 import type { ChatOpts } from "./handle.ts";
+
+export type PublicSlipstreamLp = SlipstreamLp;
 
 export type PublicTreasury = {
   live: boolean;
@@ -34,13 +42,22 @@ export type PublicTreasury = {
   usdc?: string;
   usdt?: string;
   nvdac?: string;
+  nvdacUsd?: string;
+  nvdacUsdValue?: string;
   tokenCount?: number;
   treasuryDisplay: string | null;
+  totalUsd?: string;
+  sammLpUsdc?: string;
+  sammLpUsdt?: string;
+  slipstream?: PublicSlipstreamLp[];
 };
 
 export type PublicTreasuryDeps = {
   snap?: BankrPortfolioSnap;
   readEthSpotUsd?: typeof readEthSpotUsd;
+  readNvdaSpotUsd?: typeof readNvdaSpotUsd;
+  readSammLp?: typeof readSammLpValueUsdc;
+  readSlipstream?: typeof readNvdaSlipstreamLps;
 };
 
 export type PublicFlashOrder = {
@@ -87,24 +104,33 @@ export async function tryBankrPortfolio(
   }
 }
 
+async function chainRead<T>(rpcUrl: string, fn: (url: string) => Promise<T>): Promise<T> {
+  const urls = [rpcUrl, ...PUBLIC_RPCS.filter((url) => url !== rpcUrl)];
+  let last: unknown;
+  for (const url of urls) {
+    try {
+      return await fn(url);
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      last = err;
+    }
+  }
+  throw last instanceof Error ? last : new AppError("oracle_http", "all RPCs failed");
+}
+
 async function withEthUsd(
   body: PublicTreasury,
-  config: AppConfig,
+  rpcUrl: string,
   readFn: typeof readEthSpotUsd,
-): Promise<PublicTreasury> {
-  if (!body.live) return body;
-  if (!config.baseRpcUrl) {
-    log("eth_usd_oracle", { live: false, code: "missing_rpc" });
-    return body;
-  }
+): Promise<Partial<PublicTreasury>> {
   try {
-    const spot = await readFn(BASE.ethUsdFeed, config.baseRpcUrl);
+    const spot = await chainRead(rpcUrl, (url) => readFn(BASE.ethUsdFeed, url));
     if (!Number.isFinite(spot) || spot <= 0) {
       log("eth_usd_oracle", { live: false, code: "oracle_range" });
-      return body;
+      return {};
     }
     const ethUsd = formatUsdDecimal(spot);
-    const next: PublicTreasury = { ...body, ethUsd };
+    const next: Partial<PublicTreasury> = { ethUsd };
     if (body.eth !== undefined) {
       const value = ethNotionalUsd(body.eth, spot);
       if (value !== undefined) next.ethUsdValue = value;
@@ -119,8 +145,129 @@ async function withEthUsd(
   } catch (err) {
     const code = err instanceof AppError ? err.code : "oracle_http";
     log("eth_usd_oracle", { live: false, code });
-    return body;
+    return {};
   }
+}
+
+async function withNvdaUsd(
+  body: PublicTreasury,
+  rpcUrl: string,
+  readFn: typeof readNvdaSpotUsd,
+): Promise<Partial<PublicTreasury>> {
+  try {
+    const spot = await chainRead(rpcUrl, (url) => readFn(BASE.nvdaUsdFeed, url));
+    if (!Number.isFinite(spot) || spot <= 0) {
+      log("nvda_usd_oracle", { live: false, code: "oracle_range" });
+      return {};
+    }
+    const nvdacUsd = formatUsdDecimal(spot);
+    const next: Partial<PublicTreasury> = { nvdacUsd };
+    if (body.nvdac !== undefined) {
+      const value = nvdacNotionalUsd(body.nvdac, spot);
+      if (value !== undefined) next.nvdacUsdValue = value;
+    }
+    log("nvda_usd_oracle", {
+      live: true,
+      ...(body.treasuryDisplay ? { treasury: body.treasuryDisplay } : {}),
+      nvdacUsd,
+      ...(next.nvdacUsdValue !== undefined ? { nvdacUsdValue: next.nvdacUsdValue } : {}),
+    });
+    return next;
+  } catch (err) {
+    const code = err instanceof AppError ? err.code : "oracle_http";
+    log("nvda_usd_oracle", { live: false, code });
+    return {};
+  }
+}
+
+async function withSammLp(
+  body: PublicTreasury,
+  owner: Address,
+  rpcUrl: string,
+  readFn: typeof readSammLpValueUsdc,
+): Promise<Partial<PublicTreasury>> {
+  try {
+    const lp: SammLpPosition = await chainRead(rpcUrl, (url) => readFn(owner, url));
+    if (lp.liquidity === 0n || (lp.amountUsdc === 0n && lp.amountUsdt === 0n)) {
+      log("samm_lp_quote", { live: true, liquidity: "0" });
+      return {};
+    }
+    const sammLpUsdc = formatUnits(lp.amountUsdc, USDC_DECIMALS);
+    const sammLpUsdt = formatUnits(lp.amountUsdt, USDC_DECIMALS);
+    log("samm_lp_quote", {
+      live: true,
+      ...(body.treasuryDisplay ? { treasury: body.treasuryDisplay } : {}),
+      sammLpUsdc,
+      sammLpUsdt,
+      liquidity: lp.liquidity.toString(),
+    });
+    return { sammLpUsdc, sammLpUsdt };
+  } catch (err) {
+    const code = err instanceof AppError ? err.code : "aerodrome_quote";
+    log("samm_lp_quote", { live: false, code });
+    return {};
+  }
+}
+
+async function withSlipstream(
+  body: PublicTreasury,
+  owner: Address,
+  rpcUrl: string,
+  readFn: typeof readNvdaSlipstreamLps,
+): Promise<Partial<PublicTreasury>> {
+  try {
+    const slipstream = await chainRead(rpcUrl, (url) => readFn(owner, url));
+    if (slipstream.length === 0) {
+      log("slipstream_lp_read", { live: true, count: 0 });
+      return {};
+    }
+    log("slipstream_lp_read", {
+      live: true,
+      ...(body.treasuryDisplay ? { treasury: body.treasuryDisplay } : {}),
+      count: slipstream.length,
+      tokenId: slipstream[0]?.tokenId ?? "",
+      staked: slipstream[0]?.staked === true,
+      ...(slipstream[0]?.usd !== undefined ? { usd: slipstream[0].usd } : {}),
+    });
+    return { slipstream };
+  } catch (err) {
+    const code = err instanceof AppError ? err.code : "slipstream_quote";
+    log("slipstream_lp_read", { live: false, code });
+    return {};
+  }
+}
+
+export function totalUsdFromLegs(legs: Array<string | undefined>): string | undefined {
+  const nums: number[] = [];
+  for (const raw of legs) {
+    if (raw === undefined) continue;
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 0) continue;
+    nums.push(n);
+  }
+  if (nums.length === 0) return undefined;
+  return formatUsdDecimal(nums.reduce((a, b) => a + b, 0));
+}
+
+function withTotalUsd(body: PublicTreasury): PublicTreasury {
+  if (!body.live) return body;
+  const slipUsd = body.slipstream?.map((row) => row.usd) ?? [];
+  const totalUsd = totalUsdFromLegs([
+    body.usdc,
+    body.usdt,
+    body.ethUsdValue,
+    body.nvdacUsdValue,
+    body.sammLpUsdc,
+    body.sammLpUsdt,
+    ...slipUsd,
+  ]);
+  if (totalUsd === undefined) return body;
+  log("treasury_total", {
+    live: true,
+    ...(body.treasuryDisplay ? { treasury: body.treasuryDisplay } : {}),
+    totalUsd,
+  });
+  return { ...body, totalUsd };
 }
 
 export async function publicTreasury(
@@ -129,7 +276,7 @@ export async function publicTreasury(
 ): Promise<PublicTreasury> {
   const snap = deps.snap ?? (await tryBankrPortfolio(config));
   if (!snap) return { live: false, treasuryDisplay: treasuryDisplay(config) };
-  const body: PublicTreasury = {
+  let body: PublicTreasury = {
     live: true,
     eth: snap.eth,
     usdc: snap.usdc,
@@ -138,7 +285,28 @@ export async function publicTreasury(
     tokenCount: snap.tokenCount,
     treasuryDisplay: treasuryDisplay(config, snap),
   };
-  return withEthUsd(body, config, deps.readEthSpotUsd ?? readEthSpotUsd);
+  const rpcUrl = config.baseRpcUrl;
+  if (!rpcUrl) {
+    log("treasury_chain", { live: false, code: "missing_rpc" });
+    return withTotalUsd(body);
+  }
+  const owner = snap.evmAddress ?? config.treasuryAddress;
+  const [eth, nvda] = await Promise.all([
+    withEthUsd(body, rpcUrl, deps.readEthSpotUsd ?? readEthSpotUsd),
+    withNvdaUsd(body, rpcUrl, deps.readNvdaSpotUsd ?? readNvdaSpotUsd),
+  ]);
+  body = { ...body, ...eth, ...nvda };
+  if (owner) {
+    body = {
+      ...body,
+      ...(await withSammLp(body, owner, rpcUrl, deps.readSammLp ?? readSammLpValueUsdc)),
+    };
+    body = {
+      ...body,
+      ...(await withSlipstream(body, owner, rpcUrl, deps.readSlipstream ?? readNvdaSlipstreamLps)),
+    };
+  }
+  return withTotalUsd(body);
 }
 
 function staticFlashOrders(): PublicFlashOrder[] {

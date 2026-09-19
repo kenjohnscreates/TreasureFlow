@@ -5,6 +5,12 @@ import { BASE } from "../config/constants.ts";
 import { AppError } from "../errors.ts";
 
 const FALLBACK_RPC = "https://mainnet.base.org";
+export const PUBLIC_RPCS = [
+  FALLBACK_RPC,
+  "https://base-rpc.publicnode.com",
+  "https://base.drpc.org",
+] as const;
+const RPC_HTTP = { retryCount: 2, retryDelay: 300 } as const;
 
 export type AddQuote = {
   amountUsdc: bigint;
@@ -26,7 +32,7 @@ export type SammLpPosition = {
 function rpcClient(rpcUrl = FALLBACK_RPC) {
   return createPublicClient({
     chain: base,
-    transport: http(rpcUrl || FALLBACK_RPC),
+    transport: http(rpcUrl || FALLBACK_RPC, RPC_HTTP),
   });
 }
 
