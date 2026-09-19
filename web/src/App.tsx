@@ -139,11 +139,6 @@ export function App() {
               {liveTotalUsd(treasury)}
               <small>USD</small>
             </div>
-            <div className="wallet-bals treasury-held">
-              <span>ETH {liveEthLine(treasury)}</span>
-              <span>USDT {liveAmt(treasury, "usdt")}</span>
-              <span>NVDAc {liveAmt(treasury, "nvdac")}</span>
-            </div>
           </div>
           <div className="wallet">
             <div className="tag">External Wallet</div>
@@ -457,13 +452,6 @@ function fmtUsd(raw: string): string {
   const n = Number(raw);
   if (!Number.isFinite(n)) return raw;
   return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
-}
-
-function liveEthLine(treasury: TreasuryStatus | null): string {
-  if (!treasury?.live) return NOT_LIVE;
-  const eth = treasury.eth ?? NOT_LIVE;
-  if (treasury.ethUsdValue === undefined) return eth;
-  return `${eth} ≈ $${fmtUsd(treasury.ethUsdValue)}`;
 }
 
 function shortAddr(addr: string | null | undefined): string {

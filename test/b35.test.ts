@@ -57,7 +57,8 @@ describe("B35 ETH/USD feed", () => {
       expect(lower).not.toContain(svr.toLowerCase());
     }
     const app = readFileSync(join(root, "web/src/App.tsx"), "utf8");
-    expect(app).toContain("liveEthLine");
+    expect(app).not.toContain("liveEthLine");
+    expect(app).not.toContain("treasury-held");
     expect(app).not.toMatch(/\u2014|\u2013/);
   });
 

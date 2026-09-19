@@ -221,12 +221,6 @@ body.page-landing {
   font-size: 56px;
 }
 
-.wallet .treasury-held {
-  margin-top: 4px;
-  font-size: 14px;
-  color: var(--muted);
-}
-
 .wallet-connect {
   margin-top: 8px;
   display: flex;
