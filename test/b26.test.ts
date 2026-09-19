@@ -264,7 +264,7 @@ describe("B26 dApp source guards", () => {
     const landing = readFileSync(join(root, "web/src/Landing.tsx"), "utf8");
     expect(appSrc).not.toMatch(/sessionStorage/);
     expect(appSrc).not.toMatch(/CHAT_KEY_STORAGE/);
-    expect(appSrc).not.toMatch(/type="range"/);
+    expect(appSrc).toMatch(/type="range"/);
     expect(appSrc).not.toMatch(/>\s*Lend\s*</);
     expect(appSrc).toContain("send 8 USDC to PAY_DEST_1");
     expect(appSrc).toContain("Sweep extra cash (plan only)");

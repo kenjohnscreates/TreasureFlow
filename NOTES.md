@@ -261,3 +261,10 @@ Running build notes. One entry per task.
 - dApp: write key in memory only (no sessionStorage). Confirm modal before pay / unwind_and_pay. Cancel is no second POST. Confirm signs the challenge from the connected EVM account. Pause / Resume on Home and Limits & Orders. Sign deposit disabled unless founder-ok. Limits read-only from `/status`. Lend nav removed. Sweep extra cash and LP stocks chips are plan only. Send 8 uses `PAY_DEST_1`. Landing FAQ: cap is in the agent, founder signs deposits, Pause stops outbound, fee yield only.
 - `pnpm typecheck` pass. `pnpm test` 115/115. No commit. No push. Runtime git not touched. No `--live`. No Dynamic wallet create. No AMPLE.
 - Assumed: hosted Vercel still two-service (web + agent) with new `/pause` and `/auth/*` rewrites. Not verified: founder-signed live pay, live pause on the public URL, `/tmp` spend surviving across serverless invocations, injected-wallet confirm in a real browser. Treasury `0x4c9D...a6c2`. Founder `0xD428...6d2A`. No secrets.
+
+## B27 restore Limits sliders (0-100 local)
+
+- Product: `web/src/App.tsx` LimitsPanel. Range CSS in `web/src/index.css` already present; left as-is. `#orders .limits` still 1304px equal columns. Agent policy / env defaults unchanged (buffer 15, per-call 10, daily 30, hard stop 15). Sliders are local React state only: init from GET `/status` (fallback 15 / 10 / 30), `clampUsd(..., 100)`, drag updates the displayed number. No POST to policy, Bankr, Flash, or chat. Chat still does not submit sweep, LP stocks, or Flash. No `--live`. No Flash place/cancel.
+- Limits & Orders: three `<input type="range" min={0} max={100} step={1}>` under Keep this much cash / Max per payment / Left to send today. Aria-labels kept. Subcopy kept (Never swept overnight / In the agent / Rolling 24h, orchestrator). Home has no limits row. Pause / confirm / founder / Lend-removed / plan-only chips from B26 stay.
+- `pnpm --dir web exec tsc --noEmit` pass. B26 source guard now expects range inputs. No commit. No push. Runtime git not touched.
+- Assumed: orchestrator will deploy this UI. Not verified until that deploy. Treasury `0x4c9D...a6c2`. No secrets.

@@ -255,25 +255,59 @@ function clampUsd(raw: string | undefined, fallback: number, max: number): numbe
 }
 
 function LimitsPanel({ policy }: { policy: AgentStatus["policy"] | undefined }) {
-  const buffer = clampUsd(policy?.bufferUsdc, 15, 30);
-  const perCall = clampUsd(policy?.perCallCapUsdc, 10, 15);
-  const daily = clampUsd(policy?.dailyCapUsdc, 30, 30);
+  const [buffer, setBuffer] = useState(() => clampUsd(policy?.bufferUsdc, 15, 100));
+  const [perCall, setPerCall] = useState(() =>
+    clampUsd(policy?.perCallCapUsdc, 10, 100),
+  );
+  const [daily, setDaily] = useState(() => clampUsd(policy?.dailyCapUsdc, 30, 100));
+  useEffect(() => {
+    setBuffer(clampUsd(policy?.bufferUsdc, 15, 100));
+    setPerCall(clampUsd(policy?.perCallCapUsdc, 10, 100));
+    setDaily(clampUsd(policy?.dailyCapUsdc, 30, 100));
+  }, [policy]);
   return (
     <dl className="limits">
       <div>
         <dt>Keep this much cash</dt>
         <dd>{buffer}</dd>
         <span className="sub">Never swept overnight</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={buffer}
+          aria-label="Keep this much cash"
+          onChange={(e) => setBuffer(clampUsd(e.target.value, 15, 100))}
+        />
       </div>
       <div>
         <dt>Max per payment</dt>
         <dd>{perCall}</dd>
         <span className="sub">In the agent</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={perCall}
+          aria-label="Max per payment"
+          onChange={(e) => setPerCall(clampUsd(e.target.value, 10, 100))}
+        />
       </div>
       <div>
         <dt>Left to send today</dt>
         <dd>{daily}</dd>
         <span className="sub">Rolling 24h, orchestrator</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={daily}
+          aria-label="Left to send today"
+          onChange={(e) => setDaily(clampUsd(e.target.value, 30, 100))}
+        />
       </div>
     </dl>
   );
