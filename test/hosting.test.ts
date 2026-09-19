@@ -183,19 +183,28 @@ describe("vercel.json Hobby single project", () => {
       framework?: string;
       buildCommand?: string;
       services?: unknown;
-      functions?: Record<string, { maxDuration?: number; includeFiles?: string }>;
+      functions?: Record<
+        string,
+        { maxDuration?: number; includeFiles?: string; runtime?: string }
+      >;
     };
     expect(cfg.services).toBeUndefined();
     expect(cfg.framework).toBe("hono");
     expect(cfg.buildCommand).toBe("pnpm --dir web build");
     expect(JSON.stringify(cfg)).not.toContain('"services"');
+    expect(JSON.stringify(cfg)).not.toContain("nodejs22.x");
     const bundled = Object.values(cfg.functions ?? {});
     expect(bundled.some((row) => row.includeFiles === "web/dist/**")).toBe(true);
     expect(bundled.some((row) => row.maxDuration === 60)).toBe(true);
+    expect(bundled.every((row) => row.runtime === undefined)).toBe(true);
     const entry = readFileSync(join(root, "src/app.ts"), "utf8");
     expect(entry).toContain("hono");
     expect(entry).toMatch(/chat\/http/);
     expect(entry).toContain("export default");
+    expect(entry).toContain('export const config = { runtime: "nodejs" }');
+    const http = readFileSync(join(root, "src/chat/http.ts"), "utf8");
+    expect(http).toContain('export const config = { runtime: "nodejs" }');
+    expect(http).toContain('await import("@hono/node-server")');
   });
 });
 

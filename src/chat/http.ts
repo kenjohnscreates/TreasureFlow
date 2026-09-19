@@ -63,6 +63,7 @@ app.onError((err, c) => {
   return c.json({ error: "internal", message: "request failed" }, 500);
 });
 
+export const config = { runtime: "nodejs" };
 export { app };
 export default app;
 
