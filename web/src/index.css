@@ -288,38 +288,36 @@ body.page-landing {
   padding-left: 8px;
 }
 
-#home .chips {
-  justify-content: center;
-}
-
-#home .log,
-#home .msg {
-  text-align: center;
-}
-
-#home .composer {
-  justify-content: center;
-}
-
 #home .chat {
-  align-items: center;
+  align-items: stretch;
+  text-align: left;
 }
 
 #home .chat h3,
+#home .log,
+#home .msg,
+#home .composer {
+  text-align: left;
+}
+
+#home .chips {
+  justify-content: flex-start;
+}
+
+#home .chat-head,
 #home .chips,
 #home .log,
 #home .composer,
-#home .composer-key,
 #home .pause-bar {
   width: 100%;
 }
 
 #home .composer-key {
-  justify-content: center;
+  justify-content: flex-start;
 }
 
-#home .row {
-  justify-content: center;
+#home .chat .row {
+  justify-content: flex-start;
 }
 
 #orders.page.on {
@@ -432,17 +430,53 @@ td {
   flex-direction: column;
 }
 
+.chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding: 0 0 12px;
+  border-bottom: var(--stroke) solid var(--line);
+}
+
+.chat-head h3,
 .chat h3 {
   margin: 0;
-  padding: 0 0 14px;
-  border-bottom: var(--stroke) solid var(--line);
+  padding: 0;
+  border-bottom: none;
+}
+
+.chat-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 12px;
+  border: var(--stroke) solid var(--line);
+  border-radius: 999px;
+  font:
+    700 13px/1 "IBM Plex Sans",
+    sans-serif;
+  white-space: nowrap;
+}
+
+.chat-status.is-live {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.chat-status.is-paused {
+  color: var(--muted);
 }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-start;
   gap: 10px;
-  padding: 16px 0 0;
+  flex: 0 0 auto;
+  padding: 12px 0;
 }
 
 .chips button {
@@ -459,11 +493,13 @@ td {
 }
 
 .log {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   padding: 16px 0;
   font-size: 17px;
   font-weight: 600;
+  text-align: left;
 }
 
 .msg {
@@ -488,6 +524,7 @@ td {
 
 .composer {
   display: flex;
+  flex: 0 0 auto;
   gap: 10px;
   padding-top: 12px;
   border-top: var(--stroke) solid var(--line);
@@ -504,6 +541,11 @@ td {
   font:
     700 16px "IBM Plex Sans",
     sans-serif;
+}
+
+.composer input::placeholder {
+  color: var(--muted);
+  font-weight: 600;
 }
 
 .composer input:focus {
@@ -543,14 +585,56 @@ td {
 
 .pause-bar {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   padding: 0 var(--pad);
+}
+
+.pause-bar-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.pause-bar .btn {
+  min-height: 40px;
+  padding: 8px 16px;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .pause-bar .composer-key {
   padding-top: 0;
+  flex: 0 0 auto;
+}
+
+.pause-bar .composer-key input {
+  width: 8.5rem;
+}
+
+.chat .pause-bar {
+  flex: 0 0 auto;
+  align-items: stretch;
+  width: 100%;
+  padding: 10px 0;
+  border-bottom: var(--stroke) solid var(--line);
+}
+
+.chat .pause-bar-row {
+  width: 100%;
+}
+
+.chat .pause-bar-row .composer-key {
+  margin-left: auto;
+}
+
+#orders .pause-bar {
+  align-self: center;
+  width: auto;
+  max-width: 100%;
+  padding: 0;
 }
 
 .confirm-modal {

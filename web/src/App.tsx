@@ -318,11 +318,13 @@ function PauseBar({
   chatKey,
   setChatKey,
   onStatus,
+  showStatus = true,
 }: {
   paused: boolean;
   chatKey: string;
   setChatKey: (value: string) => void;
   onStatus: (status: AgentStatus) => void;
+  showStatus?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -341,33 +343,37 @@ function PauseBar({
   }
   return (
     <div className="pause-bar">
-      <span className={paused ? "ok" : "muted"}>{paused ? "Paused" : "Live"}</span>
-      <button
-        className="btn ghost"
-        type="button"
-        disabled={busy}
-        onClick={() => void toggle(true)}
-      >
-        Pause
-      </button>
-      <button
-        className="btn ghost"
-        type="button"
-        disabled={busy}
-        onClick={() => void toggle(false)}
-      >
-        Resume
-      </button>
-      <label className="composer-key">
-        <span>Write key</span>
-        <input
-          type="password"
-          autoComplete="off"
-          aria-label="Chat write key"
-          value={chatKey}
-          onChange={(e) => setChatKey(e.target.value)}
-        />
-      </label>
+      <div className="pause-bar-row">
+        {showStatus ? (
+          <span className={paused ? "ok" : "muted"}>{paused ? "Paused" : "Live"}</span>
+        ) : null}
+        <button
+          className="btn ghost"
+          type="button"
+          disabled={busy}
+          onClick={() => void toggle(true)}
+        >
+          Pause
+        </button>
+        <button
+          className="btn ghost"
+          type="button"
+          disabled={busy}
+          onClick={() => void toggle(false)}
+        >
+          Resume
+        </button>
+        <label className="composer-key">
+          <span>Write key</span>
+          <input
+            type="password"
+            autoComplete="off"
+            aria-label="Chat write key"
+            value={chatKey}
+            onChange={(e) => setChatKey(e.target.value)}
+          />
+        </label>
+      </div>
       {err ? <span className="muted">{err}</span> : null}
     </div>
   );
@@ -495,7 +501,7 @@ function ChatPanel({
     { label: "LP stocks (plan only)", prompt: "lp stocks" },
     { label: "Send 8", prompt: SEND_CHIP },
   ];
-  const [prompt, setPrompt] = useState("Sweep extra cash");
+  const [prompt, setPrompt] = useState("");
   const [lines, setLines] = useState<LogLine[]>([
     {
       role: "agent",
@@ -556,25 +562,19 @@ function ChatPanel({
 
   return (
     <aside className="panel chat grow">
-      <h3>Ask TreasureFlow</h3>
+      <header className="chat-head">
+        <h3>Ask TreasureFlow</h3>
+        <span className={paused ? "chat-status is-paused" : "chat-status is-live"}>
+          {paused ? "Paused" : "Live"}
+        </span>
+      </header>
       <PauseBar
         paused={paused}
         chatKey={chatKey}
         setChatKey={setChatKey}
         onStatus={onStatus}
+        showStatus={false}
       />
-      <div className="chips">
-        {chips.map((chip) => (
-          <button
-            key={chip.label}
-            type="button"
-            disabled={busy}
-            onClick={() => void send(chip.prompt)}
-          >
-            {chip.label}
-          </button>
-        ))}
-      </div>
       <div className="log">
         {lines.map((line, i) => (
           <div className={"msg " + line.role} key={i}>
@@ -630,11 +630,24 @@ function ChatPanel({
           )
         ) : null}
       </div>
+      <div className="chips">
+        {chips.map((chip) => (
+          <button
+            key={chip.label}
+            type="button"
+            disabled={busy}
+            onClick={() => void send(chip.prompt)}
+          >
+            {chip.label}
+          </button>
+        ))}
+      </div>
       <form className="composer" onSubmit={onSubmit}>
         <input
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           aria-label="Ask TreasureFlow"
+          placeholder="Deposit, sweep, or send"
         />
         <button className="btn" type="submit" disabled={busy}>
           Send
