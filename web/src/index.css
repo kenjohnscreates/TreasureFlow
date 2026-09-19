@@ -20,7 +20,7 @@
 html,
 body {
   margin: 0;
-  background: #000;
+  background: var(--bg);
   color: var(--ink);
   font:
     16px/1.45 "IBM Plex Sans",
@@ -152,7 +152,8 @@ body.page-landing {
 
 .wallet {
   flex: 1 1 480px;
-  max-width: 560px;
+  max-width: 640px;
+  min-width: 0;
   border: var(--stroke) solid var(--line);
   background: var(--panel);
   padding: 18px 22px;
@@ -201,6 +202,35 @@ body.page-landing {
   font-size: 22px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.wallet-connect {
+  margin-top: 8px;
+}
+
+.wallet-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.wallet-menu .btn {
+  width: 100%;
+}
+
+.founder-connected {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.wallet aside .founder-connected b {
+  display: inline;
 }
 
 .page {

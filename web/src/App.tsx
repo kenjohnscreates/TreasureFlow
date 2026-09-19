@@ -99,7 +99,6 @@ export function App() {
         <div className="head-right">
           <span className="dot" aria-hidden="true" />
           On Base
-          <ConnectButton />
         </div>
       </header>
       <section className="wallets">
@@ -309,78 +308,100 @@ function shortAddr(addr: string | null | undefined): string {
   return addr.slice(0, 6) + "..." + addr.slice(-4);
 }
 
-function ConnectButton() {
-  if (!dynamicEnabled) {
-    return (
-      <button className="btn ghost" type="button" disabled>
-        Connect
-      </button>
-    );
-  }
-  return <ConnectControls compact />;
+function walletLabel(provider: {
+  key: string;
+  metadata?: { displayName?: string };
+}): string {
+  const named = provider.metadata?.displayName?.trim();
+  if (named) return named;
+  const key = String(provider.key).toLowerCase();
+  if (key.includes("phantom")) return "Phantom";
+  if (key.includes("trust")) return "Trust Wallet";
+  if (key.includes("metamask")) return "MetaMask";
+  return "Wallet";
 }
 
 function ExternalAddr() {
-  if (!dynamicEnabled) return <b>You sign</b>;
-  return (
-    <>
-      <ConnectedLabel />
-      <ConnectControls />
-    </>
-  );
+  if (!dynamicEnabled) {
+    return (
+      <>
+        <b>You sign</b>
+        <div className="wallet-connect">
+          <button className="btn ghost" type="button" disabled>
+            Connect wallet
+          </button>
+        </div>
+      </>
+    );
+  }
+  return <FounderWallet />;
 }
 
-function ConnectedLabel() {
-  const { data: accounts = [] } = useGetWalletAccounts();
-  const account = accounts[0];
-  return <b>{account ? shortAddr(account.address) : "You sign"}</b>;
-}
-
-function ConnectControls({ compact }: { compact?: boolean }) {
-  const { data: providers = [] } = useGetAvailableWalletProvidersData();
-  const { mutateAsync: connect, isPending } = useConnectWithWalletProvider();
+function FounderWallet() {
   const { data: accounts = [] } = useGetWalletAccounts();
   const { mutate: remove } = useRemoveWalletAccount();
   const account = accounts[0];
-  if (compact) {
-    if (account) {
-      return (
+  if (account) {
+    return (
+      <div className="founder-connected">
+        <b>{shortAddr(account.address)}</b>
         <button
-          className="btn"
+          className="btn ghost"
           type="button"
           onClick={() => remove({ walletAccount: account })}
         >
           Disconnect
         </button>
-      );
-    }
-    const first = providers[0];
-    return (
-      <button
-        className="btn"
-        type="button"
-        disabled={isPending}
-        onClick={() => first && void connect({ walletProviderKey: first.key })}
-      >
-        {first ? `Connect ${String(first.key)}` : "Connect"}
-      </button>
+      </div>
     );
   }
-  if (account) return null;
-  if (!providers.length) return <p className="muted">No injected wallet found.</p>;
   return (
-    <div className="row">
-      {providers.map((provider) => (
-        <button
-          className="btn ghost"
-          type="button"
-          key={provider.key}
-          disabled={isPending}
-          onClick={() => void connect({ walletProviderKey: provider.key })}
-        >
-          {String(provider.key)}
-        </button>
-      ))}
+    <>
+      <b>You sign</b>
+      <ConnectMenu />
+    </>
+  );
+}
+
+function ConnectMenu() {
+  const { data: providers = [] } = useGetAvailableWalletProvidersData();
+  const { mutateAsync: connect, isPending } = useConnectWithWalletProvider();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="wallet-connect">
+      <button
+        className="btn ghost"
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        disabled={isPending}
+        onClick={() => setOpen((cur) => !cur)}
+      >
+        Connect wallet
+      </button>
+      {open ? (
+        providers.length ? (
+          <div className="wallet-menu" role="listbox">
+            {providers.map((provider) => (
+              <button
+                className="btn ghost"
+                type="button"
+                role="option"
+                key={provider.key}
+                disabled={isPending}
+                onClick={() => {
+                  setOpen(false);
+                  void connect({ walletProviderKey: provider.key });
+                }}
+              >
+                {walletLabel(provider)}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="muted">No injected wallet found.</p>
+        )
+      ) : null}
     </div>
   );
 }
@@ -395,12 +416,6 @@ function ChatPanel({ dest }: { dest?: string }) {
       prompt: dest
         ? `send 8 USDC to ${dest}`
         : "send 8 USDC to 0x000000000000000000000000000000000000dEaD",
-    },
-    {
-      label: "Send 50",
-      prompt: dest
-        ? `send 50 USDC to ${dest}`
-        : "send 50 USDC to 0x000000000000000000000000000000000000dEaD",
     },
   ];
   const [prompt, setPrompt] = useState("Sweep extra cash");
