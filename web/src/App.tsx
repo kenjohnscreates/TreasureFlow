@@ -25,6 +25,7 @@ import {
   postPause,
   TREASURY_POLL_MS,
 } from "./agent";
+import { formatUsdcSpend } from "./formatUsdcSpend";
 
 type View = "home" | "orders";
 type LogLine = { role: "you" | "agent"; text: string };
@@ -237,7 +238,7 @@ export function App() {
                           ? "market"
                           : `$${order.limitPriceUsd}`}
                       </td>
-                      <td className="mono">{order.qtyUsdc}</td>
+                      <td className="mono">{formatUsdcSpend(order.qtyUsdc)}</td>
                       <td>{order.status || "resting"}</td>
                       <td className="mono">{order.id}</td>
                     </tr>

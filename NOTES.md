@@ -364,3 +364,11 @@ Running build notes. One entry per task.
 - Tests 176. `test/b38.test.ts`: 0 / <0.10 USDC noop no Flash POST; 0.235 sizes to 0.235 under hard stop 15; 2 USDC caps at 1; market quote shape; B5 ids protected; send 50 `per_call_cap`; caps 15/10/30/15. `pnpm test` + `pnpm typecheck` + `pnpm --dir web exec tsc --noEmit` pass. Restarted Bankr `pnpm agent` 8788. Reused Vite 5174. Runtime 5173/8787 left alone. No commit. No `--live`. No Flash POST `/order`.
 - Browser `127.0.0.1:5174` `/app` vs 8788: Orders headers `Limit $/cbBTC` / `USDC spend`; B5 first row `$75080.80` / `0.53164` / ACCEPTED. Chip `Buy cbBTC now`. Click -> plan `buy cbBTC` / `Market buy cbBTC. Spend 0.235011 USDC. 5% slippage. This is a market order. Does not promise a fill. Confirm to place.` Modal same copy, caps 15 / 10 / 30. **Cancelled. Did not Confirm.** Agent log: portfolio USDC 0.235011, no `bankr_demo_flash`, no quote, no POST `/order`.
 - Assumed: live free 0.235011 is enough to send without a deposit once Kenny confirms. Not verified: a live market fill after Confirm. Treasury `0x4c9D...a6c2`. No secrets.
+
+## B39 USDC spend dollars not BTC dust
+
+- Buy-the-dip `USDC spend` cells format `qtyUsdc` as USD spend so 0.53164 cannot be read as 0.5 BTC. Helper `web/src/formatUsdcSpend.ts`: finite number -> `$N.NN USDC` (`toFixed(2)`); empty/missing -> `--`; non-numeric stays raw. Same cell formatter for B5 rungs and a B38 market row. Flash qty strings, B5 ids, market-buy path, caps, chat submit, Landing, RainbowKit unchanged.
+- `0.53164` renders `$0.53 USDC`. `0.235011` renders `$0.24 USDC`. Not BTC conversion.
+- Tests 179. `test/b39.test.ts`: 0.53164 / 0.235011 / `--` / raw; App.tsx uses `formatUsdcSpend(order.qtyUsdc)`; B5 ids unchanged; caps 15/10/30/15. `pnpm test` + `pnpm --dir web exec tsc --noEmit` pass. Reused Vite 5174 and Bankr 8788. Runtime 5173/8787 left alone. No commit. No `--live`. No Flash POST `/order`.
+- Browser `127.0.0.1:5174` `/app` Limits & Orders: headers `Limit $/cbBTC` / `USDC spend`; B5 rows `$75080.80` / `$0.53 USDC` / `ORDER_STATUS_ACCEPTED` (ids `7863b457-...`, `afcc2cb5-...`, `296280cb-...`). No raw `0.53164`. No market row (no `.data/flash-demo.json`). Did not Confirm Flash.
+- Assumed: 2 fraction digits is enough for Kenny's 53 cents read. Not verified: a live market-row cell after Confirm. Treasury `0x4c9D...a6c2`. No secrets.
