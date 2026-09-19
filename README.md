@@ -1,12 +1,12 @@
 # TreasureFlow
 
-A company's idle USDC sits in a Bankr treasury. The agent can sweep extra cash into Aerodrome USDC/USDT LP for fee yield, LP NVDAc on Slipstream when asked, pay allowlisted people, and rest buy-the-dip Flash limits for cbBTC.
+A company's idle cash sits in a Bankr treasury on Base. The agent can sweep extra USDC into Aerodrome USDC/USDT LP for fee yield, LP NVDAc on Slipstream when asked, pay allowlisted people, rest buy-the-dip Flash limits for cbBTC, and place a small market buy of cbBTC from free USDC.
 
 The founder deposits. The agent never spends the founder's personal wallet.
 
 This is a Runtime NYC hackathon demo (Sep 2026). Not a pooled product. Screens show trailing fee yield only. No APY promise.
 
-**Live app:** [treasureflow.vercel.app](https://treasureflow.vercel.app/) (landing) and [treasureflow.vercel.app/app](https://treasureflow.vercel.app/app) (dApp).
+**Live app:** [treasureflow.vercel.app](https://treasureflow.vercel.app/) (landing) and [treasureflow.vercel.app/app](https://treasureflow.vercel.app/app) (dApp). Host is Vercel Hobby two-service (Vite `web/` + Hono agent `src/chat/http.ts`). Git SHA `0933378` (B40).
 
 Geo / VPN for tokenized stocks: [docs/geo.md](docs/geo.md).
 
@@ -18,25 +18,30 @@ Short pitch. Enter the dApp.
 
 **dApp (`/app`)**
 
-- **Home:** founder Connect, Bankr treasury (`0x4c9D...a6c2`), live balances, positions, chat.
-- **Orders:** three Flash cbBTC limit rungs plus BaseScan receipts.
-- **Limits:** policy chips (buffer 15, per-call 10, daily 30). Sliders are local React only. They do not save. They do not POST.
-- **Lend:** disabled.
+- **Company treasury card:** tag, TreasureFlow, truncated Bankr addr (`0x4c9D...a6c2`), live **total USD**. Positions live in the table below, not as a second line on the card.
+- **External Wallet / Company:** founder Connect via RainbowKit (EIP-6963 injected wallets). Optional WalletConnect QR if `VITE_WALLETCONNECT_PROJECT_ID` is set. Connect does not create a Bankr or Dynamic server wallet.
+- **Home:** Active positions + chat.
+- **Limits & Orders:** local policy sliders, Flash table, BaseScan receipts.
+- **Lend:** removed.
 
-Chat chips: Deposit 20 USDC, Sweep extra cash, LP stocks, Send 8, Send 50.
+Active positions (when live): Cash USDC, Held USDT, Held NVDAc, Held ETH, LP USDC/USDT sAMM (quoted pair), LP NVDAc Slipstream (NFT `#6356494` staked). `live:false` shows `--`, never the old 55/40 demo snapshot.
+
+Total USD sums legs that succeed: free USDC + free USDT (1:1), ETH * Chainlink Base ETH/USD, loose NVDAc * Chainlink Coinbase NVDA, sAMM quoted USDC+USDT, Slipstream principal USD. Failed legs are omitted, not invented.
+
+Chat chips: Deposit 20 USDC, Sweep extra cash, LP stocks, Buy cbBTC now, Send 8.
 
 Reads (keys stay on the server):
 
-- `GET /status`: policy, truncated treasury, pay dests
-- `GET /treasury`: live Bankr portfolio
-- `GET /flash-orders`: the three B5 ids (NOTES "resting" if keys are missing)
+- `GET /status`: policy, truncated treasury, founder display, pause
+- `GET /treasury`: live Bankr portfolio + USD legs + LP quotes
+- `GET /flash-orders`: B5 ids plus any demo market id (NOTES "resting" if keys are missing)
 
 ## What the agent can spend
 
 **Founder wallet (Connect)**
 
 - Founder-only. The agent does not control it.
-- Deposits are unsigned ERC-20. The founder signs. The agent does not broadcast deposits.
+- Deposits are unsigned ERC-20 (`deposit 20 USDC`, `deposit $5 usdc`). The founder signs and broadcasts. The agent does not broadcast deposits.
 
 **Bankr treasury (`0x4c9D...a6c2`, Club true)**
 
@@ -46,31 +51,37 @@ Reads (keys stay on the server):
 
 **Hosted chat writes**
 
-- Live pay needs header `x-treasureflow-key` (the dApp **Write key** field).
+- Confirm needs header `x-treasureflow-key` (the dApp **Write key** field) plus founder `personal_sign` of `GET /auth/challenge`.
 - That secret is `CHAT_KEY` on the server. Do not put `CHAT_KEY` in `VITE_*`. Never commit it.
+- Pause / Resume is the same write key. Pause stops outbound.
 
-### Chat: live vs dry
+### Chat: live vs plan
 
-**Live from `POST /chat`**
+Chip and typed prompts parse first. Unknown NL goes through Bankr LLM Gateway (`llm.bankr.bot`, default `gemini-3-flash`) as a **text mapper only**. The mapper cannot set `sent: true`. It rewrites to one canonical line, then the same parser and gates run.
+
+**Live from `POST /chat` after Confirm (write key + founder sig)**
 
 - Allowlisted pay (B13)
 - Unwind-then-pay (B14): pull USDC from sAMM LP, then transfer
+- Sweep extra cash into USDC/USDT LP (B33)
+- LP stocks / LP NVDAc (B33)
+- Market buy cbBTC from free USDC (B38)
 
-**Dry from chat (not submitted)**
+Without the write key, those return a plan (`sent: false`). Cancel on the confirm modal does not POST a second time.
 
-- Sweep extra cash into USDC/USDT LP
-- LP stocks / LP NVDAc
-- New Flash orders
+**Always unsigned (founder signs)**
 
-Those three have live hashes from CLI `--live`, not from chat.
+- Deposit USDC / NVDAc to the treasury, including optional `$` before the amount
 
 **Rejected**
 
 - Send 50: per-call cap is 10. Does not call Bankr.
 
+Cash USDC is often below the 15 buffer. Sweep noops if surplus is under the 5 USDC min. Send 8 needs free USDC (or LP to unwind). Buy cbBTC now sizes to `min(free USDC, 1)` only if free is at least 0.10 USDC; otherwise it noops and does not invent funds.
+
 ## Proof on Base (mainnet)
 
-Every hash is a BaseScan link. **Flash fills are unverified.**
+Every hash is a BaseScan link. **Flash fills are unverified.** The B38 market buy was not placed from this repo (Confirm cancelled).
 
 | Step | What | Proof |
 | --- | --- | --- |
@@ -84,21 +95,23 @@ Every hash is a BaseScan link. **Flash fills are unverified.**
 | B14 | Unwind: `removeLiquidity` | [0x85fe9aae46d2a9979d2950915565b410a64910f852c61131efc19d63b454c566](https://basescan.org/tx/0x85fe9aae46d2a9979d2950915565b410a64910f852c61131efc19d63b454c566) |
 | B14 | Transfer 10 USDC | [0xe77dabe8c8f1dd9b895ecd378c49f3d9ee287b7ea71c10dc33d0b07997d0672b](https://basescan.org/tx/0xe77dabe8c8f1dd9b895ecd378c49f3d9ee287b7ea71c10dc33d0b07997d0672b) |
 
-B2 through B5 were CLI `--live`. B13 and B14 were live `POST /chat`.
+B2 through B5 were CLI `--live`. B13 and B14 were live `POST /chat`. Sweep / LP / market Flash can also submit from chat after Confirm.
 
-### Flash cbBTC limits (B5)
+### Flash cbBTC (B5 limits + B38 market)
 
-Qty **0.53164 USDC** each. Status last seen **ACCEPTED**. **Fills unverified.**
+B5 rungs are **limit $/cbBTC**, not USDC size. Each rung spends **$0.53 USDC**. They fill only if spot dumps to that limit. Status last seen **ACCEPTED**. **Fills unverified.** Do not cancel or replace these ids.
 
-| Rung | Order id | Limit |
-| --- | --- | --- |
-| 2% | `7863b457-c132-4f6d-bc01-0925dd32d6ee` | ~$75080.80 |
-| 4% | `afcc2cb5-e93b-4565-98be-6fe60bc8c744` | ~$73548.53 |
-| 6% | `296280cb-3ba3-466f-96e6-f0f018fea652` | ~$72016.27 |
+| Rung | Order id | Limit $/cbBTC | USDC spend |
+| --- | --- | --- | --- |
+| 2% | `7863b457-c132-4f6d-bc01-0925dd32d6ee` | ~$75080.80 | $0.53 USDC |
+| 4% | `afcc2cb5-e93b-4565-98be-6fe60bc8c744` | ~$73548.53 | $0.53 USDC |
+| 6% | `296280cb-3ba3-466f-96e6-f0f018fea652` | ~$72016.27 | $0.53 USDC |
+
+**Buy cbBTC now** is a Flash **market** buy (`orderType: market`, 5% max slippage). Spend is `min(free USDC, 1)` when free is at least 0.10 USDC. It does not cancel the B5 rungs. Copy: this is a market order. Does not promise a fill.
 
 ## Limits / safety
 
-Demo scale (~$100 treasury):
+Demo scale (~$50-100 treasury):
 
 - Buffer: 15 USDC (leave this in cash)
 - Per-call cap: 10 USDC
@@ -107,6 +120,10 @@ Demo scale (~$100 treasury):
 - Reject: 50 USDC
 - Hard stop: 15 USDC per mainnet tx
 - Demo sweep: 5 USDC min
+
+Sliders on Limits & Orders are local React only (0-100). They do not save. They do not POST. Live policy is the numbers above.
+
+Hosted spend log and pause file live under `/tmp` (ephemeral across serverless invocations). Daily cap is best-effort on Vercel.
 
 ## How to run locally
 
@@ -118,9 +135,9 @@ pnpm agent   # http://127.0.0.1:8788
 pnpm web     # http://127.0.0.1:5174
 ```
 
-Landing is `/`. dApp is `/app`.
+Landing is `/`. dApp is `/app`. Do not use Runtime ports 5173/8787.
 
-Connect the **founder** wallet via RainbowKit (EIP-6963 injected wallets). Optional `VITE_WALLETCONNECT_PROJECT_ID` adds WalletConnect QR; empty still connects injected wallets. Chat still works. Connect does not create a Bankr or Dynamic server wallet.
+Connect the **founder** wallet via RainbowKit. Chat still works without Connect. Connect does not create a Bankr or Dynamic server wallet.
 
 Dry checks:
 
@@ -130,7 +147,7 @@ pnpm test
 pnpm bankr:me
 ```
 
-Live writes (CLI, not chat, for sweep / LP / new Flash):
+CLI live writes still exist (same Bankr/Flash paths as chat Confirm):
 
 ```bash
 pnpm bankr:pay -- --live
@@ -143,8 +160,10 @@ Hosted URLs are at the top of this file.
 
 ## Honest not-yet
 
-- Chat does not submit sweep, LP, or new Flash orders. Use CLI `--live` for those.
-- Production `treasureflow.vercel.app` last checked as SHA `12bec50` (B15 host). This git SHA is `23716fa` (B16 Hobby-safe Hono). Vercel git deploys of `23716fa` failed TypeScript. The live site is not B16.
-- USDC in the treasury may be 0 until the founder deposits.
-- Flash fills are unverified.
+- Flash fills are unverified. B5 rungs rest until spot hits the limit.
+- Buy cbBTC now has not been Confirmed on the live treasury from this repo.
+- Free USDC is often ~0.24, so Send 8 and sweep need a founder deposit first.
+- Policy sliders do not persist.
 - Lend is off.
+- Nightly cron is not the hosted path.
+- Spend / pause files do not survive every Vercel invocation.
