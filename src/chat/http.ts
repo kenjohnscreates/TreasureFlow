@@ -1,15 +1,15 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { loadConfig } from "../config/load.ts";
+import { mapUnknownPrompt, type LlmBalanceHint } from "../bankr/llm.ts";
+import { truncateAddress } from "../bankr/parse.ts";
+import { loadConfig, type AppConfig } from "../config/load.ts";
 import { AppError } from "../errors.ts";
-import {
-  CHAT_KEY_HEADER,
-  CHAT_NONCE_HEADER,
-  CHAT_SIG_HEADER,
-} from "./agentUrl.ts";
+import { log } from "../log.ts";
+import { CHAT_KEY_HEADER, CHAT_NONCE_HEADER, CHAT_SIG_HEADER } from "./agentUrl.ts";
 import { assertFounderSubmit, founderOk, issueChallenge } from "./founderAuth.ts";
-import { handleChat } from "./handle.ts";
+import { handleChat, type ChatOpts, type ChatReply } from "./handle.ts";
 import { chatKeyGate, corsOriginHeader, requireWriteKey } from "./hosting.ts";
+import { parseIntent } from "./intent.ts";
 import { writePaused } from "./pause.ts";
 import { chatLiveOpts, publicFlashOrders, publicTreasury } from "./reads.ts";
 import { publicStatus } from "./status.ts";
@@ -18,6 +18,53 @@ import { maybeSubmitChat } from "./submit.ts";
 const HOST = "127.0.0.1";
 export const DEFAULT_AGENT_PORT = 8788;
 const PORT = Number(process.env.AGENT_PORT || String(DEFAULT_AGENT_PORT));
+
+function liveBalanceHint(config: AppConfig, opts: ChatOpts): LlmBalanceHint | undefined {
+  const snap = opts.portfolio;
+  if (!snap) return undefined;
+  const addr = snap.evmAddress ?? config.treasuryAddress;
+  return {
+    usdc: snap.usdc,
+    usdt: snap.usdt,
+    nvdac: snap.nvdac,
+    eth: snap.eth,
+    ...(addr ? { treasuryDisplay: truncateAddress(addr) } : {}),
+  };
+}
+
+function llmGatewayReply(err: AppError): ChatReply {
+  return {
+    kind: "unknown",
+    summary: err.message,
+    plan: { action: "unknown", reason: err.code, sent: false },
+  };
+}
+
+export async function resolveChatTurn(
+  prompt: string,
+  config: AppConfig,
+): Promise<{ prompt: string; liveOpts: ChatOpts; reply?: ChatReply }> {
+  const first = parseIntent(prompt);
+  if (first.kind !== "unknown" || !config.bankrApiKey) {
+    return { prompt, liveOpts: await chatLiveOpts(config, prompt) };
+  }
+  const liveOpts = await chatLiveOpts(config, prompt);
+  try {
+    const mapped = await mapUnknownPrompt(
+      prompt,
+      config.bankrApiKey,
+      liveBalanceHint(config, liveOpts),
+    );
+    if (mapped === "UNKNOWN") return { prompt, liveOpts };
+    return { prompt: mapped, liveOpts: await chatLiveOpts(config, mapped) };
+  } catch (err) {
+    if (err instanceof AppError && (err.code === "llm_401" || err.code === "llm_402")) {
+      return { prompt, liveOpts, reply: llmGatewayReply(err) };
+    }
+    log("bankr_llm", { code: err instanceof AppError ? err.code : "llm_http" });
+    return { prompt, liveOpts };
+  }
+}
 
 const app = new Hono();
 app.use(
@@ -77,8 +124,9 @@ app.post("/chat", async (c) => {
       : "";
   if (!prompt.trim()) throw new AppError("usage", "prompt is required");
   const config = loadConfig();
-  const liveOpts = await chatLiveOpts(config, prompt);
-  const reply = handleChat(prompt, config, liveOpts);
+  const turn = await resolveChatTurn(prompt, config);
+  if (turn.reply) return c.json(turn.reply);
+  const reply = handleChat(turn.prompt, config, turn.liveOpts);
   const gate = chatKeyGate(reply, c.req.header(CHAT_KEY_HEADER), process.env.CHAT_KEY);
   if (!gate.ok) {
     return c.json({ error: gate.error, message: gate.message }, gate.status);
@@ -92,7 +140,7 @@ app.post("/chat", async (c) => {
   if (!founder.ok) {
     return c.json({ error: founder.error, message: founder.message }, founder.status);
   }
-  return c.json(await maybeSubmitChat(prompt, reply, config, liveOpts));
+  return c.json(await maybeSubmitChat(turn.prompt, reply, config, turn.liveOpts));
 });
 
 app.onError((err, c) => {
