@@ -192,3 +192,13 @@ Running build notes. One entry per task.
 - Browser `127.0.0.1:5174` vs agent `8788`: Home columns equal width (474/474 at 1600x800). No header Connect. One Connect wallet; expand showed No injected wallet found (no extensions in the automation browser). html/body/stage `rgb(11, 13, 16)`. No Send 50 chip. Lend disabled. Receipts `display:none` on Home. Orders: three ACCEPTED rungs + BaseScan receipts. Limits 15 / 10 / 30. Typed send 50: `Rejected. Per-call cap is 10 USDC.` Landing `/`: `page-landing`, FAQ 7/7 closed, headline unchanged. Treasury logs truncated `0x4c9D...a6c2`.
 - web tsc pass. No new tests. No commit. Runtime git not touched.
 - Assumed: already-running Vite 5174 / agent 8788; Dynamic env id present so Connect is enabled. Not verified: injected-wallet option labels with Phantom/MetaMask/Trust actually installed; founder-signed connect/disconnect; native 1920 desktop wrap (automation viewport override was 1600x800).
+
+## B19 Orders tab + wallet card copy (Kenny screenshot)
+
+- Product only: `web/src/App.tsx`, `web/src/index.css`. Landing FAQ untouched. Caps unchanged. Limits sliders still local-only (no persist/POST). Chat still does not submit sweep/LP/Flash. No `--live`. No Flash place/cancel. No live pay POST.
+- Always-visible wallet card: tag `Your wallet` -> `External Wallet`. Heading `Founder` -> `Company`. Cut the `You sign` line in disconnected and Dynamic-off states. One Connect wallet control kept from B18. Connected still truncated address + Disconnect in-card. Header still no Connect.
+- Orders: removed `Buys more on dips. No performance claim.` under the Flash table. No replacement claim. `FLASH_LADDER_COPY` left unused in `evidence.ts`.
+- `#orders` stack centered like Home, max-width `calc(640px * 2 + var(--gap))` (1304px, same span as the two wallet cards). Not full-bleed 1920. `.panel { overflow: hidden }` plus `border-collapse: separate; border-spacing: 0` so table rules stay inside the rounded receipts box. BaseScan links not clipped.
+- Browser `127.0.0.1:5174` `/app` vs agent `8788`: Home External Wallet / Company, no You sign, one Connect wallet, no header Connect. Orders: no dip copy; stack dx/dw 0 vs wallet cards; last receipts row inside panel (left/right/bottom bleed negative); five BaseScan links unclipped. Limits 15 / 10 / 30. Lend disabled. Treasury truncated `0x4c9D...a6c2`.
+- No new tests. No commit. Runtime git not touched.
+- Assumed: already-running Vite 5174 / agent 8788. Not verified: connected Disconnect click; native 1920 desktop wrap (automation viewport was the scaled 1920 stage).

@@ -110,8 +110,8 @@ export function App() {
           </aside>
         </div>
         <div className="wallet">
-          <div className="tag">Your wallet</div>
-          <h2>Founder</h2>
+          <div className="tag">External Wallet</div>
+          <h2>Company</h2>
           <aside>
             <ExternalAddr />
           </aside>
@@ -191,7 +191,6 @@ export function App() {
                 ))}
               </tbody>
             </table>
-            <p className="muted">Buys more on dips. No performance claim.</p>
           </div>
           <div className="panel grow">
             <h3>Receipts</h3>
@@ -324,14 +323,11 @@ function walletLabel(provider: {
 function ExternalAddr() {
   if (!dynamicEnabled) {
     return (
-      <>
-        <b>You sign</b>
-        <div className="wallet-connect">
-          <button className="btn ghost" type="button" disabled>
-            Connect wallet
-          </button>
-        </div>
-      </>
+      <div className="wallet-connect">
+        <button className="btn ghost" type="button" disabled>
+          Connect wallet
+        </button>
+      </div>
     );
   }
   return <FounderWallet />;
@@ -355,12 +351,7 @@ function FounderWallet() {
       </div>
     );
   }
-  return (
-    <>
-      <b>You sign</b>
-      <ConnectMenu />
-    </>
-  );
+  return <ConnectMenu />;
 }
 
 function ConnectMenu() {

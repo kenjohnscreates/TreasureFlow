@@ -313,12 +313,21 @@ body.page-landing {
   justify-content: center;
 }
 
-#orders,
-#limits {
-  grid-template-columns: 1fr;
+#orders.page.on {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+}
+
+#orders .stack {
+  flex: 1 1 480px;
+  max-width: calc(640px * 2 + var(--gap));
+  min-width: 0;
+  width: 100%;
 }
 
 #limits {
+  grid-template-columns: 1fr;
   align-items: start;
   align-content: start;
 }
@@ -337,6 +346,7 @@ body.page-landing {
   padding: 22px 24px;
   border-radius: var(--radius);
   min-width: 0;
+  overflow: hidden;
 }
 
 .panel.grow {
@@ -369,7 +379,8 @@ body.page-landing {
 
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 18px;
 }
 
