@@ -27,7 +27,7 @@ import {
 } from "./agent";
 import { formatUsdcSpend } from "./formatUsdcSpend";
 
-type View = "home" | "orders";
+type View = "home" | "orders" | "allowlist";
 type LogLine = { role: "you" | "agent"; text: string };
 type PendingWrite = {
   prompt: string;
@@ -114,6 +114,16 @@ export function App() {
               onClick={() => setView("orders")}
             >
               Limits & Orders
+            </button>
+            <button
+              type="button"
+              aria-current={view === "allowlist" ? "page" : undefined}
+              onClick={() => setView("allowlist")}
+            >
+              Approved wallets
+            </button>
+            <button type="button" disabled title="Coming later">
+              Lend & Borrow
             </button>
           </nav>
           <div className="head-right">
@@ -277,9 +287,50 @@ export function App() {
             </div>
           </div>
         </section>
+        <section
+          className={view === "allowlist" ? "page on" : "page"}
+          id="allowlist"
+        >
+          <div className="stack">
+            <div className="panel">
+              <h3>Approved wallets</h3>
+              <p className="muted">
+                The agent can only send to these wallets.
+              </p>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Wallet</th>
+                    <th>Address</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allowlistRows(status).map((row) => (
+                    <tr key={row.slot}>
+                      <td>{row.name}</td>
+                      <td className="mono">{row.addr}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );
+}
+
+function allowlistRows(
+  status: AgentStatus | null,
+): { slot: string; name: string; addr: string }[] {
+  const dests = status?.payDestDisplays ?? [];
+  const founder = status?.founderDisplay;
+  return [0, 1].map((i) => {
+    const addr = dests[i];
+    const name = addr && addr === founder ? "Founder" : `Wallet ${i + 1}`;
+    return { slot: `dest-${i}`, name, addr: addr ?? "--" };
+  });
 }
 
 function clampUsd(raw: string | undefined, fallback: number, max: number): number {

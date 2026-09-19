@@ -106,6 +106,8 @@ body.page-landing {
 .top nav button:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+  color: var(--muted);
+  border-color: transparent;
 }
 
 .head-right {
@@ -329,13 +331,15 @@ body.page-landing {
   justify-content: flex-start;
 }
 
-#orders.page.on {
+#orders.page.on,
+#allowlist.page.on {
   display: flex;
   justify-content: center;
   align-items: stretch;
 }
 
-#orders .stack {
+#orders .stack,
+#allowlist .stack {
   flex: 1 1 480px;
   max-width: calc(640px * 2 + var(--gap));
   min-width: 0;
@@ -348,8 +352,13 @@ body.page-landing {
   max-width: 100%;
 }
 
-#orders .panel {
+#orders .panel,
+#allowlist .panel {
   flex: 0 0 auto;
+}
+
+#allowlist .panel .muted {
+  margin: 0 0 16px;
 }
 
 .stack {
