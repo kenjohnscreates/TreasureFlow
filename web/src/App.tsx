@@ -222,8 +222,8 @@ export function App() {
                 <thead>
                   <tr>
                     <th>Rung</th>
-                    <th>Price</th>
-                    <th>Qty</th>
+                    <th>Limit $/cbBTC</th>
+                    <th>USDC spend</th>
                     <th>Status</th>
                     <th>Id</th>
                   </tr>
@@ -231,8 +231,12 @@ export function App() {
                 <tbody>
                   {orders.map((order) => (
                     <tr key={order.id}>
-                      <td>{order.rungPct}%</td>
-                      <td className="mono">${order.limitPriceUsd}</td>
+                      <td>{order.rungPct === 0 ? "market" : `${order.rungPct}%`}</td>
+                      <td className="mono">
+                        {order.limitPriceUsd === "market" || order.rungPct === 0
+                          ? "market"
+                          : `$${order.limitPriceUsd}`}
+                      </td>
                       <td className="mono">{order.qtyUsdc}</td>
                       <td>{order.status || "resting"}</td>
                       <td className="mono">{order.id}</td>
@@ -240,6 +244,10 @@ export function App() {
                   ))}
                 </tbody>
               </table>
+              <p className="muted">
+                B5 rungs fill only if spot drops to that limit. Buys more on dips. No
+                performance claim.
+              </p>
             </div>
             <div className="panel grow">
               <h3>Receipts</h3>
@@ -480,8 +488,8 @@ function ChatPanel({
     { label: "Sweep extra cash", prompt: "sweep" },
     { label: "LP stocks", prompt: "lp stocks" },
     {
-      label: "Buy 1 USDC cbBTC",
-      prompt: "buy 1 USDC of cbBTC 0.01 percent below spot",
+      label: "Buy cbBTC now",
+      prompt: "buy cbBTC",
     },
     { label: "Send 8", prompt: SEND_CHIP },
   ];
@@ -675,7 +683,7 @@ function ConfirmModal({
       : pending.kind === "lp_stocks"
         ? `LP stocks (NVDAc). Notional under 15 USDC. Caps ${caps}.`
         : pending.kind === "demo_flash"
-          ? `Buy 1 USDC of cbBTC 0.01 percent below spot. Buys more on dips. No performance claim. Caps ${caps}.`
+          ? `Market buy cbBTC. Spend ${pending.amount || "0"} USDC. 5% slippage. This is a market order. Does not promise a fill. Caps ${caps}.`
           : `Send ${pending.amount} USDC to ${pending.dest}. Caps ${caps}.`;
   return (
     <div className="confirm-modal" role="dialog" aria-label="Confirm">

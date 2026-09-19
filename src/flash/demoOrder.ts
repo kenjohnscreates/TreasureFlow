@@ -8,7 +8,12 @@ import { FLASH_ORDERS } from "../demo/evidence.ts";
 import { AppError } from "../errors.ts";
 import { log } from "../log.ts";
 import { readSpotUsd } from "../oracle/chainlink.ts";
-import { assertHardStop, assertNotPaused, remainingDailyCap } from "../policy/math.ts";
+import {
+  assertHardStop,
+  assertNotPaused,
+  assertPerCall,
+  remainingDailyCap,
+} from "../policy/math.ts";
 import { appendSpend, loadSpend } from "../policy/spendLog.ts";
 import { appendDemoFlashOrder } from "./demoPersist.ts";
 import { getOrder, quoteOrder, submitOrder } from "./http.ts";
@@ -25,10 +30,17 @@ import {
   parseFlashQuote,
 } from "./parse.ts";
 import { signFlashPayload } from "./sign.ts";
-import { limitBuyQuote } from "./types.ts";
+import { FLASH_MARKET_MAX_SLIPPAGE, marketBuyQuote } from "./types.ts";
 
 export const DEMO_FLASH_USDC = usdc(1);
-export const DEMO_FLASH_PCT_BELOW = 0.01;
+export const DEMO_FLASH_MIN_USDC = usdc("0.10");
+export const DEMO_FLASH_PCT_BELOW = 0;
+export const DEMO_FLASH_MAX_SLIPPAGE = FLASH_MARKET_MAX_SLIPPAGE;
+
+export function sizeDemoFlashSpend(usdcFree: bigint): bigint {
+  if (usdcFree < DEMO_FLASH_MIN_USDC) return 0n;
+  return usdcFree < DEMO_FLASH_USDC ? usdcFree : DEMO_FLASH_USDC;
+}
 
 export function isProtectedFlashOrderId(id: string): boolean {
   return FLASH_ORDERS.some((order) => order.id === id);
@@ -39,10 +51,6 @@ export function demoFlashLimitPrice(
   pctBelow = DEMO_FLASH_PCT_BELOW,
 ): number {
   return spotUsd * (1 - pctBelow / 100);
-}
-
-function usdPrice(value: number): string {
-  return value.toFixed(2);
 }
 
 export type DemoFlashDeps = {
@@ -79,32 +87,35 @@ export async function executeDemoFlash(args: {
 }): Promise<DemoFlashResult> {
   const { config, usdcFree, live } = args;
   const deps = args.deps ?? {};
-  const qtyUsdc = formatUnits(DEMO_FLASH_USDC, USDC_DECIMALS);
+  const spendUsdc = sizeDemoFlashSpend(usdcFree);
+  const qtyUsdc = formatUnits(spendUsdc, USDC_DECIMALS);
+  const limitPriceUsd = "market";
   const base: DemoFlashResult = {
     sent: false,
     reason: "",
     qtyUsdc,
     pctBelowSpot: DEMO_FLASH_PCT_BELOW,
+    limitPriceUsd,
   };
   assertNotPaused(config.paused);
-  assertHardStop(DEMO_FLASH_USDC, config.policy);
   const treasury = config.treasuryAddress;
   if (!treasury) throw new AppError("missing_treasury", "TREASURY_ADDRESS is required");
   assertNotStranded(treasury);
-  if (usdcFree < DEMO_FLASH_USDC) {
+  if (spendUsdc <= 0n) {
     const reason = usdcFree <= 0n ? "no free USDC" : "insufficient_usdc";
     log("bankr_demo_flash", { sent: false, reason });
     return { ...base, reason };
   }
+  assertPerCall(spendUsdc, config.policy);
+  assertHardStop(spendUsdc, config.policy);
   const spendFn = deps.loadSpend ?? loadSpend;
   const spend = await spendFn();
   const dailyLeft = remainingDailyCap(config.policy.dailyCapUsdc, spend);
-  if (DEMO_FLASH_USDC > dailyLeft) {
+  if (spendUsdc > dailyLeft) {
     throw new AppError("daily_cap", "demo flash USDC would exceed daily cap");
   }
   const spotFn = deps.readSpotUsd ?? readSpotUsd;
   const spotUsd = await spotFn(BASE.btcUsdFeed, publicRpc(config.baseRpcUrl));
-  const limitPriceUsd = usdPrice(demoFlashLimitPrice(spotUsd));
   const priced = { ...base, spotUsd, limitPriceUsd, reason: "place demo flash" };
   if (!live) {
     log("bankr_demo_flash", { sent: false, reason: "not live", limitPriceUsd, spotUsd });
@@ -117,18 +128,19 @@ export async function executeDemoFlash(args: {
     throw new AppError("missing_flash", "FLASH_API_KEY is required for demo flash");
   }
 
-  const request = limitBuyQuote({
+  const request = marketBuyQuote({
     targetAsset: BASE.cbBtc,
     contraAsset: BASE.usdc,
     qtyUsdc,
-    limitNotionalPrice: limitPriceUsd,
+    maxSlippage: DEMO_FLASH_MAX_SLIPPAGE,
     funderAddress: treasury,
   });
   const quoteFn = deps.quoteOrder ?? quoteOrder;
   const quoted = parseFlashQuote(await quoteFn(config.flashApiKey, request));
   log("bankr_demo_flash_quote", {
     qty: qtyUsdc,
-    limitNotionalPrice: limitPriceUsd,
+    orderType: "market",
+    maxSlippage: DEMO_FLASH_MAX_SLIPPAGE,
     quoteId: quoted.quoteId,
     hasApprove: Boolean(quoted.approveTx),
   });
@@ -201,7 +213,7 @@ export async function executeDemoFlash(args: {
   }
 
   const append = deps.appendSpend ?? appendSpend;
-  await append(DEMO_FLASH_USDC);
+  await append(spendUsdc);
   const persist = deps.appendDemoFlashOrder ?? appendDemoFlashOrder;
   await persist({
     id: submitted,
@@ -216,7 +228,8 @@ export async function executeDemoFlash(args: {
     status,
     ...(filledQty ? { filledQty } : {}),
     qty: qtyUsdc,
-    limitNotionalPrice: limitPriceUsd,
+    orderType: "market",
+    maxSlippage: DEMO_FLASH_MAX_SLIPPAGE,
   });
   const out: DemoFlashResult = {
     sent: true,

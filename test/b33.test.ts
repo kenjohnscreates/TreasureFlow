@@ -25,7 +25,6 @@ import { loadConfig } from "../src/config/load.ts";
 import { FLASH_ORDERS } from "../src/demo/evidence.ts";
 import {
   DEMO_FLASH_USDC,
-  demoFlashLimitPrice,
   executeDemoFlash,
   isProtectedFlashOrderId,
 } from "../src/flash/demoOrder.ts";
@@ -223,9 +222,10 @@ describe("B33 pause, hard stop, 0 USDC, B5", () => {
     });
     expect(reply.plan.hardStopOk).toBe(true);
     expect(reply.plan.qtyUsdc).toBe("1");
-    expect(reply.plan.pctBelowSpot).toBe(0.01);
-    expect(reply.plan.limitPriceUsd).toBe(demoFlashLimitPrice(100_000).toFixed(2));
-    expect(reply.summary).toContain("No performance claim");
+    expect(reply.plan.pctBelowSpot).toBe(0);
+    expect(reply.plan.orderType).toBe("market");
+    expect(reply.plan.limitPriceUsd).toBe("market");
+    expect(reply.summary).toContain("Market buy");
     expect(reply.summary).not.toMatch(/\u2014|\u2013/);
   });
 

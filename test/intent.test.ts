@@ -84,6 +84,7 @@ describe("parseIntent", () => {
     expect(parseIntent("buy 1 USDC of cbBTC 0.01 percent below spot").kind).toBe(
       "demo_flash",
     );
+    expect(parseIntent("buy cbBTC").kind).toBe("demo_flash");
     expect(parseIntent("limits").kind).toBe("limits");
     expect(parseIntent("ladder").kind).toBe("limits");
   });

@@ -282,7 +282,8 @@ describe("B26 dApp source guards", () => {
     expect(appSrc).not.toContain("Sweep extra cash (plan only)");
     expect(appSrc).toContain("LP stocks");
     expect(appSrc).not.toContain("LP stocks (plan only)");
-    expect(appSrc).toContain("buy 1 USDC of cbBTC 0.01 percent below spot");
+    expect(appSrc).toContain("buy cbBTC");
+    expect(appSrc).toContain("Buy cbBTC now");
     expect(landing).toContain("not the connected wallet");
     expect(landing).toContain("founder signs deposits");
     expect(landing).toContain("Pause stops outbound");

@@ -15,7 +15,13 @@ import {
   type AppConfig,
 } from "../config/constants.ts";
 import { AppError } from "../errors.ts";
-import { DEMO_FLASH_PCT_BELOW, DEMO_FLASH_USDC, demoFlashLimitPrice } from "../flash/demoOrder.ts";
+import {
+  DEMO_FLASH_MAX_SLIPPAGE,
+  DEMO_FLASH_MIN_USDC,
+  DEMO_FLASH_PCT_BELOW,
+  DEMO_FLASH_USDC,
+  sizeDemoFlashSpend,
+} from "../flash/demoOrder.ts";
 import { buildLimitLadder } from "../flash/ladder.ts";
 import type { SpendEvent, TreasurySnapshot } from "../policy/math.ts";
 import { assertHardStop, assertPerCall } from "../policy/math.ts";
@@ -298,8 +304,9 @@ function lpStocksPlan(config: AppConfig): ChatReply {
   };
 }
 
-const DEMO_FLASH_COPY =
-  "Buy 1 USDC of cbBTC 0.01 percent below spot. Buys more on dips. No performance claim. Confirm to place. Does not promise a fill.";
+function demoFlashCopy(qtyUsdc: string): string {
+  return `Market buy cbBTC. Spend ${qtyUsdc} USDC. 5% slippage. This is a market order. Does not promise a fill. Confirm to place.`;
+}
 
 function demoFlashPlan(config: AppConfig, opts: ChatOpts): ChatReply {
   if (config.paused) return rejectChat("demo_flash", "paused");
@@ -311,35 +318,39 @@ function demoFlashPlan(config: AppConfig, opts: ChatOpts): ChatReply {
     throw err;
   }
   const snapshot = snapshotOf(opts);
-  const limitPriceUsd =
-    typeof opts.spotUsd === "number"
-      ? demoFlashLimitPrice(opts.spotUsd).toFixed(2)
-      : "";
+  const spendUsdc = snapshot ? sizeDemoFlashSpend(snapshot.usdcFree) : 0n;
+  const qtyUsdc = formatUnits(spendUsdc, USDC_DECIMALS);
   const plan: Record<string, string | number | boolean> = {
     action: "noop",
     sent: false,
-    qtyUsdc: formatUnits(DEMO_FLASH_USDC, USDC_DECIMALS),
+    qtyUsdc,
     pctBelowSpot: DEMO_FLASH_PCT_BELOW,
+    orderType: "market",
+    maxSlippage: DEMO_FLASH_MAX_SLIPPAGE,
+    limitPriceUsd: "market",
     hardStopOk: DEMO_FLASH_USDC < config.policy.hardStopUsdc,
   };
-  if (limitPriceUsd) plan.limitPriceUsd = limitPriceUsd;
   if (!snapshot) {
     return {
       kind: "demo_flash",
       summary: `${MISSING_LIVE} Confirm will noop.`,
-      plan: { ...plan, reason: "no_live_snapshot" },
+      plan: {
+        ...plan,
+        qtyUsdc: formatUnits(DEMO_FLASH_USDC, USDC_DECIMALS),
+        reason: "no_live_snapshot",
+      },
     };
   }
-  if (snapshot.usdcFree < DEMO_FLASH_USDC) {
+  if (spendUsdc <= 0n) {
     return {
       kind: "demo_flash",
-      summary: "Not enough USDC for a 1 USDC cbBTC limit. Confirm will noop.",
+      summary: `Not enough USDC for a market buy of cbBTC (need at least ${formatUnits(DEMO_FLASH_MIN_USDC, USDC_DECIMALS)}). Confirm will noop.`,
       plan: { ...plan, reason: snapshot.usdcFree <= 0n ? "no free USDC" : "insufficient_usdc" },
     };
   }
   return {
     kind: "demo_flash",
-    summary: DEMO_FLASH_COPY,
+    summary: demoFlashCopy(qtyUsdc),
     plan: { ...plan, action: "demo_flash", reason: "place demo flash" },
   };
 }

@@ -170,7 +170,7 @@ export async function maybeSubmitChatFlash(
     if (!result.sent) {
       return {
         kind: "demo_flash",
-        summary: `Demo flash noop (${result.reason}). Did not place an order.`,
+        summary: `Market buy noop (${result.reason}). Did not place an order.`,
         plan: {
           ...reply.plan,
           action: "noop",
@@ -178,19 +178,23 @@ export async function maybeSubmitChatFlash(
           reason: result.reason,
           qtyUsdc: result.qtyUsdc,
           pctBelowSpot: result.pctBelowSpot,
+          orderType: "market",
+          maxSlippage: "0.05",
           ...(result.limitPriceUsd ? { limitPriceUsd: result.limitPriceUsd } : {}),
         },
       };
     }
     return {
       kind: "demo_flash",
-      summary: `Placed 1 USDC cbBTC limit 0.01 percent below spot. Buys more on dips. No performance claim. Order ${result.orderId ?? ""}.`,
+      summary: `Placed market buy of cbBTC. Spend ${result.qtyUsdc} USDC. 5% slippage. This is a market order. Does not promise a fill. Order ${result.orderId ?? ""}.`,
       plan: {
         ...reply.plan,
         action: "demo_flash",
         sent: true,
         qtyUsdc: result.qtyUsdc,
         pctBelowSpot: result.pctBelowSpot,
+        orderType: "market",
+        maxSlippage: "0.05",
         ...(result.orderId ? { orderId: result.orderId } : {}),
         ...(result.status ? { status: result.status } : {}),
         ...(result.limitPriceUsd ? { limitPriceUsd: result.limitPriceUsd } : {}),

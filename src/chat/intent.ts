@@ -50,7 +50,7 @@ const FROM_EXT_DEPOSIT_RE =
 const LP_RE = /^\s*lp(?:\s+(?:stocks|nvdac?))?\s*$/i;
 const SWEEP_RE = /^\s*sweep\b/i;
 const DEMO_FLASH_RE =
-  /^\s*buy\s+1(?:\.0*)?\s*usdc\s+of\s+cbbtc\s+0\.01\s+percent\s+below\s+spot\s*$/i;
+  /^\s*buy(?:\s+1(?:\.0*)?\s*usdc\s+of)?\s+cbbtc(?:\s+0\.01\s+percent\s+below\s+spot)?\s*$/i;
 const LIMITS_RE = /^\s*(limits|ladder)\b/i;
 const EXTERNAL_WALLET_RE =
   /external\s+wallet|founder\s+wallet|\bmy\s+(?:external\s+)?wallet\b/i;
