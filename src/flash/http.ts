@@ -20,22 +20,37 @@ function errorCode(body: unknown): string {
   return "";
 }
 
+type FlashHeaders = Record<string, string>;
+
+type FlashInit = {
+  method?: string;
+  body?: string;
+  headers?: FlashHeaders;
+};
+
+type FlashRes = Awaited<ReturnType<typeof fetch>> & {
+  ok: boolean;
+  status: number;
+  json: () => Promise<unknown>;
+};
+
 export async function flashJson(
   path: string,
   apiKey: string,
-  init: RequestInit = {},
+  init: FlashInit = {},
 ): Promise<unknown> {
   if (!apiKey) throw new AppError("flash_unwired", "FLASH_API_KEY is empty");
-  let res: Response;
+  const opts = {
+    ...init,
+    headers: {
+      "content-type": "application/json",
+      "x-definitive-api-key": apiKey,
+      ...(init.headers ?? {}),
+    },
+  };
+  let res: FlashRes;
   try {
-    res = await fetch(`${FLASH_BASE_URL}${path}`, {
-      ...init,
-      headers: {
-        "content-type": "application/json",
-        "x-definitive-api-key": apiKey,
-        ...(init.headers ?? {}),
-      },
-    });
+    res = (await fetch(`${FLASH_BASE_URL}${path}`, opts)) as FlashRes;
   } catch {
     throw new AppError("flash_http", "Flash request failed");
   }

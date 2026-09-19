@@ -9,15 +9,21 @@ export type NvdaQuote = {
   source: string;
 };
 
+type QuoteRes = Awaited<ReturnType<typeof fetch>> & {
+  ok: boolean;
+  json: () => Promise<unknown>;
+};
+
 export async function fetchNvdaQuote(nowMs = Date.now()): Promise<NvdaQuote> {
   const url =
     "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?interval=1m&range=1d";
-  let res: Response;
+  const opts = {
+    headers: { "User-Agent": "Mozilla/5.0 TreasureFlow" },
+    signal: AbortSignal.timeout(15_000),
+  };
+  let res: QuoteRes;
   try {
-    res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 TreasureFlow" },
-      signal: AbortSignal.timeout(15_000),
-    });
+    res = (await fetch(url, opts)) as QuoteRes;
   } catch {
     throw new AppError("nvda_quote", "NVDA quote request failed");
   }

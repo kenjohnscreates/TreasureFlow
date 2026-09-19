@@ -10,22 +10,37 @@ function statusMessage(status: number): string {
   return `Bankr ${status}`;
 }
 
+type BankrHeaders = Record<string, string>;
+
+type BankrInit = {
+  method?: string;
+  body?: string;
+  headers?: BankrHeaders;
+};
+
+type BankrRes = Awaited<ReturnType<typeof fetch>> & {
+  ok: boolean;
+  status: number;
+  json: () => Promise<unknown>;
+};
+
 async function bankrFetch(
   path: string,
   apiKey: string,
-  init: RequestInit,
+  init: BankrInit,
 ): Promise<unknown> {
   if (!apiKey) throw new AppError("bankr_unwired", "BANKR_API_KEY is empty");
-  let res: Response;
+  const opts = {
+    ...init,
+    headers: {
+      "X-API-Key": apiKey,
+      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...(init.headers ?? {}),
+    },
+  };
+  let res: BankrRes;
   try {
-    res = await fetch(`${BANKR_BASE_URL}${path}`, {
-      ...init,
-      headers: {
-        "X-API-Key": apiKey,
-        ...(init.body ? { "Content-Type": "application/json" } : {}),
-        ...(init.headers ?? {}),
-      },
-    });
+    res = (await fetch(`${BANKR_BASE_URL}${path}`, opts)) as BankrRes;
   } catch {
     throw new AppError("bankr_http", "Bankr request failed");
   }
