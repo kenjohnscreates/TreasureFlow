@@ -1,14 +1,8 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { isEvmWalletAccount } from "@dynamic-labs-sdk/evm";
-import { createWalletClientForWalletAccount } from "@dynamic-labs-sdk/evm/viem";
-import {
-  useConnectWithWalletProvider,
-  useGetAvailableWalletProvidersData,
-  useGetWalletAccounts,
-  useRemoveWalletAccount,
-} from "@dynamic-labs-sdk/react-hooks";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { type Address } from "viem";
 import { base } from "viem/chains";
+import { useAccount, useSwitchChain, useWalletClient } from "wagmi";
 import {
   FLASH_ORDERS,
   LIVE_RECEIPTS,
@@ -29,7 +23,6 @@ import {
   postChat,
   postPause,
 } from "./agent";
-import { dynamicEnabled } from "./dynamicClient";
 
 type View = "home" | "orders";
 type LogLine = { role: "you" | "agent"; text: string };
@@ -392,92 +385,10 @@ function shortAddr(addr: string | null | undefined): string {
   return addr.slice(0, 6) + "..." + addr.slice(-4);
 }
 
-function walletLabel(provider: {
-  key: string;
-  metadata?: { displayName?: string };
-}): string {
-  const named = provider.metadata?.displayName?.trim();
-  if (named) return named;
-  const key = String(provider.key).toLowerCase();
-  if (key.includes("phantom")) return "Phantom";
-  if (key.includes("trust")) return "Trust Wallet";
-  if (key.includes("metamask")) return "MetaMask";
-  return "Wallet";
-}
-
 function ExternalAddr() {
-  if (!dynamicEnabled) {
-    return (
-      <div className="wallet-connect">
-        <button className="btn ghost" type="button" disabled>
-          Connect wallet
-        </button>
-      </div>
-    );
-  }
-  return <FounderWallet />;
-}
-
-function FounderWallet() {
-  const { data: accounts = [] } = useGetWalletAccounts();
-  const { mutate: remove } = useRemoveWalletAccount();
-  const account = accounts[0];
-  if (account) {
-    return (
-      <div className="founder-connected">
-        <b>{shortAddr(account.address)}</b>
-        <button
-          className="btn ghost"
-          type="button"
-          onClick={() => remove({ walletAccount: account })}
-        >
-          Disconnect
-        </button>
-      </div>
-    );
-  }
-  return <ConnectMenu />;
-}
-
-function ConnectMenu() {
-  const { data: providers = [] } = useGetAvailableWalletProvidersData();
-  const { mutateAsync: connect, isPending } = useConnectWithWalletProvider();
-  const [open, setOpen] = useState(false);
   return (
     <div className="wallet-connect">
-      <button
-        className="btn ghost"
-        type="button"
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        disabled={isPending}
-        onClick={() => setOpen((cur) => !cur)}
-      >
-        Connect wallet
-      </button>
-      {open ? (
-        providers.length ? (
-          <div className="wallet-menu" role="listbox">
-            {providers.map((provider) => (
-              <button
-                className="btn ghost"
-                type="button"
-                role="option"
-                key={provider.key}
-                disabled={isPending}
-                onClick={() => {
-                  setOpen(false);
-                  void connect({ walletProviderKey: provider.key });
-                }}
-              >
-                {walletLabel(provider)}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="muted">No injected wallet found.</p>
-        )
-      ) : null}
+      <ConnectButton showBalance={false} />
     </div>
   );
 }
@@ -582,13 +493,7 @@ function ChatPanel({
             <p>{line.text}</p>
           </div>
         ))}
-        {unsigned ? (
-          dynamicEnabled ? (
-            <SignDeposit tx={unsigned} />
-          ) : (
-            <p className="muted">Connect is off until web/.env has the Dynamic id.</p>
-          )
-        ) : null}
+        {unsigned ? <SignDeposit tx={unsigned} /> : null}
         {encoded.length ? (
           <div>
             {encoded.map((tx) => (
@@ -600,34 +505,23 @@ function ChatPanel({
           </div>
         ) : null}
         {pending ? (
-          dynamicEnabled ? (
-            <ConfirmModal
-              pending={pending}
-              policy={policy}
-              chatKey={chatKey}
-              busy={confirmBusy}
-              setBusy={setConfirmBusy}
-              err={confirmErr}
-              setErr={setConfirmErr}
-              onCancel={cancelConfirm}
-              onReply={(summary, sent) => {
-                setLines((cur) => [...cur, { role: "agent", text: summary }]);
-                if (sent) {
-                  setPending(null);
-                  setChatKey("");
-                }
-              }}
-            />
-          ) : (
-            <div className="confirm-modal" role="dialog" aria-label="Confirm pay">
-              <p className="muted">Connect the founder wallet.</p>
-              <div className="row">
-                <button className="btn ghost" type="button" onClick={cancelConfirm}>
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )
+          <ConfirmModal
+            pending={pending}
+            policy={policy}
+            chatKey={chatKey}
+            busy={confirmBusy}
+            setBusy={setConfirmBusy}
+            err={confirmErr}
+            setErr={setConfirmErr}
+            onCancel={cancelConfirm}
+            onReply={(summary, sent) => {
+              setLines((cur) => [...cur, { role: "agent", text: summary }]);
+              if (sent) {
+                setPending(null);
+                setChatKey("");
+              }
+            }}
+          />
         ) : null}
       </div>
       <div className="chips">
@@ -678,20 +572,17 @@ function ConfirmModal({
   onCancel: () => void;
   onReply: (summary: string, sent: boolean) => void;
 }) {
-  const { data: accounts = [] } = useGetWalletAccounts();
-  const account = accounts.find(isEvmWalletAccount);
+  const { address } = useAccount();
+  const { data: walletClient } = useWalletClient();
   async function confirm() {
     setBusy(true);
     setErr("");
     try {
-      if (!account) {
+      if (!address || !walletClient) {
         setErr("Connect the founder wallet.");
         return;
       }
       const challenge = await fetchChallenge();
-      const walletClient = await createWalletClientForWalletAccount({
-        walletAccount: account,
-      });
       const sig = await walletClient.signMessage({ message: challenge.message });
       const reply = await postChat(pending.prompt, {
         chatKey: chatKey || undefined,
@@ -726,13 +617,13 @@ function ConfirmModal({
 }
 
 function SignDeposit({ tx }: { tx: UnsignedTx }) {
-  const { data: accounts = [] } = useGetWalletAccounts();
-  const account = accounts.find(isEvmWalletAccount);
+  const { address, chainId } = useAccount();
+  const { data: walletClient } = useWalletClient();
+  const { switchChainAsync } = useSwitchChain();
   const [hash, setHash] = useState("");
   const [err, setErr] = useState("");
   const [founderOk, setFounderOk] = useState(false);
   useEffect(() => {
-    const address = account?.address;
     if (!address) {
       setFounderOk(false);
       return;
@@ -740,20 +631,23 @@ function SignDeposit({ tx }: { tx: UnsignedTx }) {
     fetchFounderOk(address)
       .then(setFounderOk)
       .catch(() => setFounderOk(false));
-  }, [account?.address]);
-  if (!account || !founderOk) {
+  }, [address]);
+  if (!address || !founderOk) {
     return <p className="muted">Connect the founder wallet.</p>;
   }
-  const connected = account;
   async function sign() {
     setErr("");
     if (tx.chainId !== base.id) {
       setErr("Deposit is Base only.");
       return;
     }
-    const walletClient = await createWalletClientForWalletAccount({
-      walletAccount: connected,
-    });
+    if (!walletClient) {
+      setErr("Connect the founder wallet.");
+      return;
+    }
+    if (chainId !== base.id) {
+      await switchChainAsync({ chainId: base.id });
+    }
     const sent = await walletClient.sendTransaction({
       chain: base,
       to: tx.to as Address,

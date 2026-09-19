@@ -214,31 +214,8 @@ body.page-landing {
 
 .wallet-connect {
   margin-top: 8px;
-}
-
-.wallet-menu {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.wallet-menu .btn {
-  width: 100%;
-}
-
-.founder-connected {
-  display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.wallet aside .founder-connected b {
-  display: inline;
 }
 
 .page {

@@ -120,7 +120,7 @@ pnpm web     # http://127.0.0.1:5174
 
 Landing is `/`. dApp is `/app`.
 
-Copy `web/.env.example` to `web/.env` and fill `VITE_DYNAMIC_ENVIRONMENT_ID` to Connect the **founder** wallet only. Empty ID disables Connect. Chat still works. Connect does not create a Bankr or Dynamic server wallet.
+Connect the **founder** wallet via RainbowKit (EIP-6963 injected wallets). Optional `VITE_WALLETCONNECT_PROJECT_ID` adds WalletConnect QR; empty still connects injected wallets. Chat still works. Connect does not create a Bankr or Dynamic server wallet.
 
 Dry checks:
 
