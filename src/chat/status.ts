@@ -16,11 +16,13 @@ export function publicStatus(config: AppConfig) {
     dryRun: config.dryRun,
     paused: config.paused,
     signer: "bankr" as const,
-    treasuryAddress: config.treasuryAddress,
     treasuryDisplay: config.treasuryAddress
       ? truncateAddress(config.treasuryAddress)
       : null,
-    payDestinations: config.payDestinations,
+    payDestDisplays: config.payDestinations.map((addr) => truncateAddress(addr)),
+    founderDisplay: config.founderAddress
+      ? truncateAddress(config.founderAddress)
+      : null,
     tokens: {
       usdc: BASE.usdc,
       usdt: BASE.usdt,

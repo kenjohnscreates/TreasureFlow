@@ -44,9 +44,11 @@ describe("B2 prompt-to-pay orchestrator", () => {
     expect(reply.plan.code).toBe("missing_pay_dest");
   });
 
-  it("exposes pay destinations on status for the dApp", () => {
+  it("exposes truncated pay destinations on status for the dApp", () => {
     const status = publicStatus({ ...loadConfig(), payDestinations: [dest] });
-    expect(status.payDestinations).toEqual([dest]);
+    expect(status.payDestDisplays).toEqual([truncateAddress(dest)]);
+    expect(status).not.toHaveProperty("payDestinations");
+    expect(JSON.stringify(status)).not.toContain(dest);
   });
 });
 
@@ -74,6 +76,7 @@ function submitDeps() {
   return {
     transferUsdc: vi.fn(async () => MOCK_HASH),
     appendSpend: vi.fn(async () => []),
+    assertSpendWritable: vi.fn(async () => undefined),
     submitSkillTx: vi.fn(async () => APPROVE_HASH),
     readSammLp: vi.fn(async () => ({
       liquidity: LP_LIQ,

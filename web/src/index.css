@@ -309,7 +309,8 @@ body.page-landing {
 #home .chips,
 #home .log,
 #home .composer,
-#home .composer-key {
+#home .composer-key,
+#home .pause-bar {
   width: 100%;
 }
 
@@ -538,6 +539,31 @@ td {
 .composer-key input:focus {
   outline: none;
   border-color: var(--cyan);
+}
+
+.pause-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 0 var(--pad);
+}
+
+.pause-bar .composer-key {
+  padding-top: 0;
+}
+
+.confirm-modal {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: var(--stroke) solid var(--line);
+  border-radius: 12px;
+  background: #1c222b;
+}
+
+.confirm-modal p {
+  margin: 0 0 10px;
+  font-weight: 700;
 }
 
 .limits {

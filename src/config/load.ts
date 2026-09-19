@@ -1,5 +1,6 @@
 import { config as loadDotenv } from "dotenv";
 import { type Address, getAddress, isAddress } from "viem";
+import { readPausedFile } from "../chat/pause.ts";
 import { AppError } from "../errors.ts";
 import { type AppConfig, usdc } from "./constants.ts";
 
@@ -35,6 +36,14 @@ function treasury(value: string): Address | null {
   return getAddress(value);
 }
 
+function founder(value: string): Address | null {
+  if (!value) return null;
+  if (!isAddress(value)) {
+    throw new AppError("bad_address", "FOUNDER_ADDRESS is not an address");
+  }
+  return getAddress(value);
+}
+
 export function loadConfig(envPath = ".env"): AppConfig {
   loadDotenv({ path: envPath, quiet: true });
   loadDotenv({ path: ".env.example", quiet: true, override: false });
@@ -48,6 +57,7 @@ export function loadConfig(envPath = ".env"): AppConfig {
     dynamicApiToken: env("DYNAMIC_API_TOKEN"),
     dynamicWalletId: env("DYNAMIC_WALLET_ID"),
     treasuryAddress: treasury(env("TREASURY_ADDRESS")),
+    founderAddress: founder(env("FOUNDER_ADDRESS")),
     baseRpcUrl: env("BASE_RPC_URL"),
     baseSepoliaRpcUrl: env("BASE_SEPOLIA_RPC_URL"),
     xaiApiKey: env("XAI_API_KEY"),
@@ -65,7 +75,7 @@ export function loadConfig(envPath = ".env"): AppConfig {
       demoRejectUsdc: usdc(envNumber("DEMO_REJECT_USDC", "50")),
     },
     dryRun: envBool("DRY_RUN", true),
-    paused: envBool("PAUSED", false),
+    paused: envBool("PAUSED", false) || readPausedFile(),
     cronTz: process.env.CRON_TZ || "America/New_York",
   };
 }

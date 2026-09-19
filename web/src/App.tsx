@@ -21,25 +21,33 @@ import {
   type FlashOrdersStatus,
   type TreasuryStatus,
   type UnsignedTx,
+  fetchChallenge,
   fetchFlashOrders,
+  fetchFounderOk,
   fetchStatus,
   fetchTreasury,
   postChat,
+  postPause,
 } from "./agent";
 import { dynamicEnabled } from "./dynamicClient";
 
-const CHAT_KEY_STORAGE = "treasureflow-chat-key";
-
 type View = "home" | "orders";
 type LogLine = { role: "you" | "agent"; text: string };
+type PendingPay = {
+  prompt: string;
+  amount: string;
+  dest: string;
+};
 
 const NOT_LIVE = "--";
+const SEND_CHIP = "send 8 USDC to PAY_DEST_1";
 
 export function App() {
   const [view, setView] = useState<View>("home");
   const [status, setStatus] = useState<AgentStatus | null>(null);
   const [treasury, setTreasury] = useState<TreasuryStatus | null>(null);
   const [flashOrders, setFlashOrders] = useState<FlashOrdersStatus | null>(null);
+  const [chatKey, setChatKey] = useState("");
   useEffect(() => {
     fetchStatus()
       .then(setStatus)
@@ -93,9 +101,6 @@ export function App() {
           >
             Limits & Orders
           </button>
-          <button type="button" disabled>
-            Lend
-          </button>
         </nav>
         <div className="head-right">
           <span className="dot" aria-hidden="true" />
@@ -107,7 +112,7 @@ export function App() {
           <div className="tag">Company treasury</div>
           <h2>TreasureFlow</h2>
           <aside>
-            <b>{status?.treasuryDisplay ?? shortAddr(status?.treasuryAddress)}</b>
+            <b>{status?.treasuryDisplay ?? "not created"}</b>
           </aside>
         </div>
         <div className="wallet">
@@ -164,10 +169,22 @@ export function App() {
             </table>
           </div>
         </div>
-        <ChatPanel dest={status?.payDestinations?.[0]} />
+        <ChatPanel
+          chatKey={chatKey}
+          setChatKey={setChatKey}
+          policy={p}
+          paused={status?.paused === true}
+          onStatus={setStatus}
+        />
       </section>
       <section className={view === "orders" ? "page on" : "page"} id="orders">
         <div className="stack">
+          <PauseBar
+            paused={status?.paused === true}
+            chatKey={chatKey}
+            setChatKey={setChatKey}
+            onStatus={setStatus}
+          />
           <LimitsPanel policy={p} />
           <div className="panel">
             <h3>Buy-the-dip orders</h3>
@@ -238,59 +255,87 @@ function clampUsd(raw: string | undefined, fallback: number, max: number): numbe
 }
 
 function LimitsPanel({ policy }: { policy: AgentStatus["policy"] | undefined }) {
-  const [buffer, setBuffer] = useState(15);
-  const [perCall, setPerCall] = useState(10);
-  const [daily, setDaily] = useState(30);
-  useEffect(() => {
-    setBuffer(clampUsd(policy?.bufferUsdc, 15, 30));
-    setPerCall(clampUsd(policy?.perCallCapUsdc, 10, 15));
-    setDaily(clampUsd(policy?.dailyCapUsdc, 30, 30));
-  }, [policy]);
+  const buffer = clampUsd(policy?.bufferUsdc, 15, 30);
+  const perCall = clampUsd(policy?.perCallCapUsdc, 10, 15);
+  const daily = clampUsd(policy?.dailyCapUsdc, 30, 30);
   return (
     <dl className="limits">
       <div>
         <dt>Keep this much cash</dt>
         <dd>{buffer}</dd>
         <span className="sub">Never swept overnight</span>
-        <input
-          type="range"
-          min={0}
-          max={30}
-          step={1}
-          value={buffer}
-          aria-label="Keep this much cash"
-          onChange={(e) => setBuffer(clampUsd(e.target.value, 15, 30))}
-        />
       </div>
       <div>
         <dt>Max per payment</dt>
         <dd>{perCall}</dd>
-        <span className="sub">Set in the wallet</span>
-        <input
-          type="range"
-          min={0}
-          max={15}
-          step={1}
-          value={perCall}
-          aria-label="Max per payment"
-          onChange={(e) => setPerCall(clampUsd(e.target.value, 10, 15))}
-        />
+        <span className="sub">In the agent</span>
       </div>
       <div>
         <dt>Left to send today</dt>
         <dd>{daily}</dd>
         <span className="sub">Rolling 24h, orchestrator</span>
-        <input
-          type="range"
-          min={0}
-          max={30}
-          step={1}
-          value={daily}
-          aria-label="Left to send today"
-          onChange={(e) => setDaily(clampUsd(e.target.value, 30, 30))}
-        />
       </div>
     </dl>
+  );
+}
+
+function PauseBar({
+  paused,
+  chatKey,
+  setChatKey,
+  onStatus,
+}: {
+  paused: boolean;
+  chatKey: string;
+  setChatKey: (value: string) => void;
+  onStatus: (status: AgentStatus) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  async function toggle(next: boolean) {
+    setBusy(true);
+    setErr("");
+    try {
+      await postPause(next, chatKey || undefined);
+      const nextStatus = await fetchStatus();
+      onStatus(nextStatus);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "pause failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="pause-bar">
+      <span className={paused ? "ok" : "muted"}>{paused ? "Paused" : "Live"}</span>
+      <button
+        className="btn ghost"
+        type="button"
+        disabled={busy}
+        onClick={() => void toggle(true)}
+      >
+        Pause
+      </button>
+      <button
+        className="btn ghost"
+        type="button"
+        disabled={busy}
+        onClick={() => void toggle(false)}
+      >
+        Resume
+      </button>
+      <label className="composer-key">
+        <span>Write key</span>
+        <input
+          type="password"
+          autoComplete="off"
+          aria-label="Chat write key"
+          value={chatKey}
+          onChange={(e) => setChatKey(e.target.value)}
+        />
+      </label>
+      {err ? <span className="muted">{err}</span> : null}
+    </div>
   );
 }
 
@@ -397,17 +442,24 @@ function ConnectMenu() {
   );
 }
 
-function ChatPanel({ dest }: { dest?: string }) {
+function ChatPanel({
+  chatKey,
+  setChatKey,
+  policy,
+  paused,
+  onStatus,
+}: {
+  chatKey: string;
+  setChatKey: (value: string) => void;
+  policy: AgentStatus["policy"] | undefined;
+  paused: boolean;
+  onStatus: (status: AgentStatus) => void;
+}) {
   const chips = [
     { label: "Deposit 20 USDC", prompt: "deposit 20 USDC" },
-    { label: "Sweep extra cash", prompt: "sweep" },
-    { label: "LP stocks", prompt: "lp stocks" },
-    {
-      label: "Send 8",
-      prompt: dest
-        ? `send 8 USDC to ${dest}`
-        : "send 8 USDC to 0x000000000000000000000000000000000000dEaD",
-    },
+    { label: "Sweep extra cash (plan only)", prompt: "sweep" },
+    { label: "LP stocks (plan only)", prompt: "lp stocks" },
+    { label: "Send 8", prompt: SEND_CHIP },
   ];
   const [prompt, setPrompt] = useState("Sweep extra cash");
   const [lines, setLines] = useState<LogLine[]>([
@@ -419,23 +471,9 @@ function ChatPanel({ dest }: { dest?: string }) {
   const [unsigned, setUnsigned] = useState<UnsignedTx | null>(null);
   const [encoded, setEncoded] = useState<UnsignedTx[]>([]);
   const [busy, setBusy] = useState(false);
-  const [chatKey, setChatKey] = useState(() => {
-    try {
-      return sessionStorage.getItem(CHAT_KEY_STORAGE) ?? "";
-    } catch {
-      return "";
-    }
-  });
-
-  function persistChatKey(value: string) {
-    setChatKey(value);
-    try {
-      if (value) sessionStorage.setItem(CHAT_KEY_STORAGE, value);
-      else sessionStorage.removeItem(CHAT_KEY_STORAGE);
-    } catch {
-      /* private mode */
-    }
-  }
+  const [pending, setPending] = useState<PendingPay | null>(null);
+  const [confirmErr, setConfirmErr] = useState("");
+  const [confirmBusy, setConfirmBusy] = useState(false);
 
   async function send(next: string) {
     const text = next.trim();
@@ -443,10 +481,20 @@ function ChatPanel({ dest }: { dest?: string }) {
     setBusy(true);
     setLines((cur) => [...cur, { role: "you", text }]);
     try {
-      const reply = await postChat(text, chatKey || undefined);
+      const reply = await postChat(text);
       setLines((cur) => [...cur, { role: "agent", text: reply.summary }]);
       setUnsigned(reply.kind === "deposit" ? (reply.unsignedTx ?? null) : null);
       setEncoded(reply.encodedTxs ?? []);
+      if (reply.plan.action === "pay" || reply.plan.action === "unwind_and_pay") {
+        setPending({
+          prompt: text,
+          amount: String(reply.plan.amountUsdc ?? ""),
+          dest: String(reply.plan.to ?? ""),
+        });
+        setConfirmErr("");
+      } else {
+        setPending(null);
+      }
     } catch {
       setLines((cur) => [
         ...cur,
@@ -454,10 +502,17 @@ function ChatPanel({ dest }: { dest?: string }) {
       ]);
       setUnsigned(null);
       setEncoded([]);
+      setPending(null);
     } finally {
       setBusy(false);
       setPrompt("");
     }
+  }
+
+  function cancelConfirm() {
+    setPending(null);
+    setConfirmErr("");
+    setChatKey("");
   }
 
   function onSubmit(e: FormEvent) {
@@ -468,6 +523,12 @@ function ChatPanel({ dest }: { dest?: string }) {
   return (
     <aside className="panel chat grow">
       <h3>Ask TreasureFlow</h3>
+      <PauseBar
+        paused={paused}
+        chatKey={chatKey}
+        setChatKey={setChatKey}
+        onStatus={onStatus}
+      />
       <div className="chips">
         {chips.map((chip) => (
           <button
@@ -504,6 +565,36 @@ function ChatPanel({ dest }: { dest?: string }) {
             <p className="muted">Treasury signs these later. Not your wallet.</p>
           </div>
         ) : null}
+        {pending ? (
+          dynamicEnabled ? (
+            <ConfirmModal
+              pending={pending}
+              policy={policy}
+              chatKey={chatKey}
+              busy={confirmBusy}
+              setBusy={setConfirmBusy}
+              err={confirmErr}
+              setErr={setConfirmErr}
+              onCancel={cancelConfirm}
+              onReply={(summary, sent) => {
+                setLines((cur) => [...cur, { role: "agent", text: summary }]);
+                if (sent) {
+                  setPending(null);
+                  setChatKey("");
+                }
+              }}
+            />
+          ) : (
+            <div className="confirm-modal" role="dialog" aria-label="Confirm pay">
+              <p className="muted">Connect the founder wallet.</p>
+              <div className="row">
+                <button className="btn ghost" type="button" onClick={cancelConfirm}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )
+        ) : null}
       </div>
       <form className="composer" onSubmit={onSubmit}>
         <input
@@ -515,17 +606,75 @@ function ChatPanel({ dest }: { dest?: string }) {
           Send
         </button>
       </form>
-      <label className="composer-key">
-        <span>Write key</span>
-        <input
-          type="password"
-          autoComplete="off"
-          aria-label="Chat write key"
-          value={chatKey}
-          onChange={(e) => persistChatKey(e.target.value)}
-        />
-      </label>
     </aside>
+  );
+}
+
+function ConfirmModal({
+  pending,
+  policy,
+  chatKey,
+  busy,
+  setBusy,
+  err,
+  setErr,
+  onCancel,
+  onReply,
+}: {
+  pending: PendingPay;
+  policy: AgentStatus["policy"] | undefined;
+  chatKey: string;
+  busy: boolean;
+  setBusy: (value: boolean) => void;
+  err: string;
+  setErr: (value: string) => void;
+  onCancel: () => void;
+  onReply: (summary: string, sent: boolean) => void;
+}) {
+  const { data: accounts = [] } = useGetWalletAccounts();
+  const account = accounts.find(isEvmWalletAccount);
+  async function confirm() {
+    setBusy(true);
+    setErr("");
+    try {
+      if (!account) {
+        setErr("Connect the founder wallet.");
+        return;
+      }
+      const challenge = await fetchChallenge();
+      const walletClient = await createWalletClientForWalletAccount({
+        walletAccount: account,
+      });
+      const sig = await walletClient.signMessage({ message: challenge.message });
+      const reply = await postChat(pending.prompt, {
+        chatKey: chatKey || undefined,
+        nonce: challenge.nonce,
+        sig,
+      });
+      onReply(reply.summary, reply.plan.sent === true);
+      if (reply.plan.sent !== true) setErr(reply.summary);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "confirm failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="confirm-modal" role="dialog" aria-label="Confirm pay">
+      <p>
+        Send {pending.amount} USDC to {pending.dest}. Caps {policy?.bufferUsdc ?? "15"} /{" "}
+        {policy?.perCallCapUsdc ?? "10"} / {policy?.dailyCapUsdc ?? "30"}.
+      </p>
+      {err ? <p className="muted">{err}</p> : null}
+      <div className="row">
+        <button className="btn" type="button" disabled={busy} onClick={() => void confirm()}>
+          Confirm
+        </button>
+        <button className="btn ghost" type="button" disabled={busy} onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -534,8 +683,19 @@ function SignDeposit({ tx }: { tx: UnsignedTx }) {
   const account = accounts.find(isEvmWalletAccount);
   const [hash, setHash] = useState("");
   const [err, setErr] = useState("");
-  if (!account) {
-    return <p className="muted">Connect your wallet, then sign the deposit.</p>;
+  const [founderOk, setFounderOk] = useState(false);
+  useEffect(() => {
+    const address = account?.address;
+    if (!address) {
+      setFounderOk(false);
+      return;
+    }
+    fetchFounderOk(address)
+      .then(setFounderOk)
+      .catch(() => setFounderOk(false));
+  }, [account?.address]);
+  if (!account || !founderOk) {
+    return <p className="muted">Connect the founder wallet.</p>;
   }
   const connected = account;
   async function sign() {

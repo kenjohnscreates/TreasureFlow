@@ -1,5 +1,6 @@
 import { getAddress } from "viem";
 import { describe, expect, it } from "vitest";
+import { truncateAddress } from "../src/bankr/parse.ts";
 import { parseIntent, assertAllowlisted } from "../src/chat/intent.ts";
 import { handleChat } from "../src/chat/handle.ts";
 import { encodeTransfer } from "../src/aerodrome/encode.ts";
@@ -11,6 +12,15 @@ import { AppError } from "../src/errors.ts";
 const dest = getAddress("0x000000000000000000000000000000000000dEaD");
 
 describe("parseIntent", () => {
+  it("parses send N USDC to PAY_DEST_1", () => {
+    const intent = parseIntent("send 8 USDC to PAY_DEST_1");
+    expect(intent.kind).toBe("pay");
+    if (intent.kind === "pay") {
+      expect(intent.amountUsdc).toBe(8_000_000n);
+      expect(intent.to).toBe("PAY_DEST_1");
+    }
+  });
+
   it("parses send N USDC to 0x", () => {
     const intent = parseIntent(`send 8 USDC to ${dest}`);
     expect(intent.kind).toBe("pay");
@@ -85,6 +95,16 @@ describe("handleChat", () => {
       expect(err).toBeInstanceOf(AppError);
       if (err instanceof AppError) expect(err.code).toBe("missing_treasury");
     }
+  });
+
+  it("handleChat resolves PAY_DEST_1 before allowlist", () => {
+    const dest = getAddress("0x1111111111111111111111111111111111111111");
+    const config = { ...loadConfig(), payDestinations: [dest] };
+    const reply = handleChat("send 8 USDC to PAY_DEST_1", config);
+    expect(reply.kind).toBe("pay");
+    expect(reply.plan.action).toBe("pay");
+    expect(reply.plan.to).toBe(truncateAddress(dest));
+    expect(reply.plan.sent).toBe(false);
   });
 
   it("returns lp stocks CLI pointer and dry sweep/limits", () => {

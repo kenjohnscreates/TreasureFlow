@@ -20,16 +20,17 @@ import { transferUsdc } from "../bankr/transfer.ts";
 import { BASE, USDC_DECIMALS, type AppConfig } from "../config/constants.ts";
 import { AppError } from "../errors.ts";
 import { log } from "../log.ts";
-import { assertHardStop } from "../policy/math.ts";
-import { appendSpend } from "../policy/spendLog.ts";
+import { assertHardStop, assertNotPaused } from "../policy/math.ts";
+import { appendSpend, assertSpendWritable } from "../policy/spendLog.ts";
 import { rejectChatPay, type ChatReply } from "./handle.ts";
-import { assertAllowlisted, parseIntent } from "./intent.ts";
+import { assertAllowlisted, parseIntent, resolvePayDest } from "./intent.ts";
 
 const SLIPPAGE_BPS = 50n;
 
 export type SubmitPayDeps = {
   transferUsdc?: typeof transferUsdc;
   appendSpend?: typeof appendSpend;
+  assertSpendWritable?: typeof assertSpendWritable;
   submitSkillTx?: typeof submitSkillTx;
   readSammLp?: (owner: Address, rpcUrl: string) => Promise<SammLpPosition>;
   quoteRemoveLiquidity?: (liquidity: bigint, rpcUrl?: string) => Promise<RemoveQuote>;
@@ -46,12 +47,14 @@ function skillTx(to: string, data: `0x${string}`, label: string): SkillTx {
 function guardPayIntent(prompt: string, config: AppConfig) {
   const intent = parseIntent(prompt);
   if (intent.kind !== "pay") return undefined;
-  assertAllowlisted(intent.to, config.payDestinations);
-  assertNotStranded(intent.to);
+  const to = resolvePayDest(intent.to, config.payDestinations);
+  if (!to) throw new AppError("missing_pay_dest", "PAY_DEST_1 is not set");
+  assertAllowlisted(to, config.payDestinations);
+  assertNotStranded(to);
   if (!config.bankrApiKey) {
     throw new AppError("missing_bankr", "BANKR_API_KEY is required for chat pay");
   }
-  return intent;
+  return { ...intent, to };
 }
 
 async function submitTransfer(
@@ -217,9 +220,24 @@ export async function maybeSubmitChatPay(
   deps: SubmitPayDeps = {},
 ): Promise<ChatReply> {
   if (reply.kind !== "pay") return reply;
-  if (reply.plan.action === "pay") return submitTransfer(prompt, reply, config, deps);
-  if (reply.plan.action === "unwind_and_pay") {
-    return submitUnwindAndPay(prompt, reply, config, deps);
+  if (reply.plan.action !== "pay" && reply.plan.action !== "unwind_and_pay") {
+    return reply;
   }
-  return reply;
+  try {
+    assertNotPaused(config.paused);
+  } catch (err) {
+    if (err instanceof AppError && err.code === "paused") return rejectChatPay("paused");
+    throw err;
+  }
+  const probe = deps.assertSpendWritable ?? assertSpendWritable;
+  try {
+    await probe();
+  } catch (err) {
+    if (err instanceof AppError && err.code === "spend_unwritable") {
+      return rejectChatPay("spend_unwritable");
+    }
+    throw err;
+  }
+  if (reply.plan.action === "pay") return submitTransfer(prompt, reply, config, deps);
+  return submitUnwindAndPay(prompt, reply, config, deps);
 }

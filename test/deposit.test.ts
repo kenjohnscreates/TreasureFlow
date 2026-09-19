@@ -50,8 +50,9 @@ describe("B1 unsigned deposit", () => {
   it("status exposes Bankr treasury for the founder dApp", () => {
     const status = publicStatus({ ...loadConfig(), treasuryAddress: TREASURY });
     expect(status.signer).toBe("bankr");
-    expect(status.treasuryAddress).toBe(TREASURY);
+    expect(status).not.toHaveProperty("treasuryAddress");
     expect(status.treasuryDisplay).toBe(truncateAddress(TREASURY));
+    expect(JSON.stringify(status)).not.toContain(TREASURY);
     expect(status.tokens.usdc).toBe(BASE.usdc);
     expect(status.tokens.nvdac).toBe(BASE.nvdac);
   });

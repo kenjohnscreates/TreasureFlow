@@ -2,7 +2,7 @@ import { formatUnits } from "viem";
 import { truncateAddress } from "../bankr/parse.ts";
 import { loadConfig } from "../config/load.ts";
 import { USDC_DECIMALS } from "../config/constants.ts";
-import { parseIntent } from "./intent.ts";
+import { parseIntent, resolvePayDest } from "./intent.ts";
 import { planPay } from "../sweep/plan.ts";
 import { log } from "../log.ts";
 import { AppError } from "../errors.ts";
@@ -31,10 +31,12 @@ export async function runPayCli(): Promise<void> {
   if (!config.payDestinations.length) {
     throw new AppError("missing_pay_dest", "PAY_DEST_1 is required");
   }
+  const to = resolvePayDest(intent.to, config.payDestinations);
+  if (!to) throw new AppError("missing_pay_dest", "PAY_DEST_1 is required");
   const plan = planPay({
     snapshot: demoSnapshot(),
     amountUsdc: intent.amountUsdc,
-    to: intent.to,
+    to,
     config,
     spend: [],
   });

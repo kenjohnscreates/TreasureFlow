@@ -27,7 +27,9 @@ export function allowCorsOrigin(
   origin: string,
   env: NodeJS.Dict<string> = process.env,
 ): boolean {
-  if ((LOCAL_CORS_ORIGINS as readonly string[]).includes(origin)) return true;
+  if (!env.VERCEL && (LOCAL_CORS_ORIGINS as readonly string[]).includes(origin)) {
+    return true;
+  }
   return vercelCorsOrigins(env).includes(origin);
 }
 
@@ -69,9 +71,45 @@ export function chatKeyGate(
   reply: { kind: string; plan: { action?: unknown } },
   header: string | undefined,
   expected: string | undefined,
+  env: NodeJS.Dict<string> = process.env,
 ): ChatKeyGate {
   if (!wouldSubmitChatPay(reply)) return { ok: true, submit: false };
+  if (!header) return { ok: true, submit: false };
+  if (env.VERCEL && !expected) {
+    return {
+      ok: false,
+      status: 401,
+      error: "unauthorized",
+      message: "x-treasureflow-key required",
+    };
+  }
   if (chatSubmitAllowed(header, expected)) return { ok: true, submit: true };
+  return {
+    ok: false,
+    status: 401,
+    error: "unauthorized",
+    message: "x-treasureflow-key required",
+  };
+}
+
+export type WriteKeyGate =
+  | { ok: true }
+  | { ok: false; status: 401; error: "unauthorized"; message: string };
+
+export function requireWriteKey(
+  header: string | undefined,
+  expected: string | undefined,
+  env: NodeJS.Dict<string> = process.env,
+): WriteKeyGate {
+  if (env.VERCEL && !expected) {
+    return {
+      ok: false,
+      status: 401,
+      error: "unauthorized",
+      message: "x-treasureflow-key required",
+    };
+  }
+  if (chatSubmitAllowed(header, expected)) return { ok: true };
   return {
     ok: false,
     status: 401,

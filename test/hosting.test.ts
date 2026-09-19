@@ -67,10 +67,14 @@ describe("CHAT_KEY write gate", () => {
   };
   const sweep = { kind: "sweep" as const, plan: { action: "sweep" as const } };
 
-  it("allows submit when CHAT_KEY is unset", () => {
+  it("plans without a key and submits locally if a key header is sent", () => {
     expect(chatSubmitAllowed(undefined, undefined)).toBe(true);
     expect(chatSubmitAllowed(undefined, "")).toBe(true);
     expect(chatKeyGate(pay, undefined, undefined)).toEqual({
+      ok: true,
+      submit: false,
+    });
+    expect(chatKeyGate(pay, "any", undefined)).toEqual({
       ok: true,
       submit: true,
     });
@@ -85,7 +89,11 @@ describe("CHAT_KEY write gate", () => {
       ok: true,
       submit: true,
     });
-    expect(chatKeyGate(unwind, undefined, "secret")).toMatchObject({
+    expect(chatKeyGate(pay, undefined, "secret")).toEqual({
+      ok: true,
+      submit: false,
+    });
+    expect(chatKeyGate(unwind, "wrong", "secret")).toMatchObject({
       ok: false,
       status: 401,
       error: "unauthorized",
@@ -111,6 +119,7 @@ describe("CHAT_KEY write gate", () => {
 
 describe("agent HTTP CORS", () => {
   afterEach(() => {
+    delete process.env.VERCEL;
     delete process.env.VERCEL_URL;
     delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
   });
@@ -158,6 +167,8 @@ describe("agent HTTP CORS", () => {
     expect(res.status).toBeLessThan(300);
     const allow = (res.headers.get("access-control-allow-headers") ?? "").toLowerCase();
     expect(allow).toContain("x-treasureflow-key");
+    expect(allow).toContain("x-treasureflow-nonce");
+    expect(allow).toContain("x-treasureflow-sig");
   });
 
   it("leaves GET /status open when CHAT_KEY is set", async () => {
@@ -200,12 +211,15 @@ describe("vercel.json services", () => {
     expect(JSON.stringify(cfg)).not.toContain("nodejs22.x");
     expect(JSON.stringify(cfg)).not.toContain("nextjs");
     const sources = cfg.rewrites.map((row) => row.source);
-    expect(sources.slice(0, 5)).toEqual([
+    expect(sources.slice(0, 8)).toEqual([
       "/health",
       "/status",
       "/treasury",
       "/flash-orders",
       "/chat",
+      "/pause",
+      "/auth/challenge",
+      "/auth/founder-ok",
     ]);
     expect(sources.at(-1)).toBe("/(.*)");
   });

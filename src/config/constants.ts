@@ -41,6 +41,7 @@ export type AppConfig = {
   dynamicApiToken: string;
   dynamicWalletId: string;
   treasuryAddress: Address | null;
+  founderAddress: Address | null;
   baseRpcUrl: string;
   baseSepoliaRpcUrl: string;
   xaiApiKey: string;

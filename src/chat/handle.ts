@@ -14,6 +14,7 @@ import type { SpendEvent, TreasurySnapshot } from "../policy/math.ts";
 import { planPay, planSweep, type PayPlan, type SweepPlan } from "../sweep/plan.ts";
 import {
   parseIntent,
+  resolvePayDest,
   type DepositIntent,
   type DepositToken,
   type Intent,
@@ -131,7 +132,11 @@ export function rejectChatPay(code: string): ChatReply {
               ? "Rejected. PAY_DEST_1 is not set."
               : code === "insufficient_lp"
                 ? "Rejected. Not enough LP USDC to cover payment shortfall."
-                : `Rejected. ${code}`;
+                : code === "paused"
+                  ? "Rejected. Pause is on. No outbound activity."
+                  : code === "spend_unwritable"
+                    ? "Rejected. Spend log is not writable."
+                    : `Rejected. ${code}`;
   return {
     kind: "pay",
     summary,
@@ -143,11 +148,13 @@ function payPlan(raw: string, config: AppConfig, opts: ChatOpts): ChatReply {
   const intent = parseIntent(raw);
   if (intent.kind !== "pay") throw new AppError("parse", "expected pay intent");
   if (!config.payDestinations.length) return rejectChatPay("missing_pay_dest");
+  const to = resolvePayDest(intent.to, config.payDestinations);
+  if (!to) return rejectChatPay("missing_pay_dest");
   try {
     const plan = planPay({
       snapshot: snapshotOf(opts),
       amountUsdc: intent.amountUsdc,
-      to: intent.to,
+      to,
       config,
       spend: opts.spend ?? [],
     });

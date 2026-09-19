@@ -1,4 +1,8 @@
-import { CHAT_KEY_HEADER } from "../../src/chat/agentUrl";
+import {
+  CHAT_KEY_HEADER,
+  CHAT_NONCE_HEADER,
+  CHAT_SIG_HEADER,
+} from "../../src/chat/agentUrl";
 
 export const AGENT_URL = import.meta.env.PROD
   ? ""
@@ -16,9 +20,9 @@ export type AgentStatus = {
   dryRun: boolean;
   paused: boolean;
   signer: "bankr";
-  treasuryAddress: string | null;
   treasuryDisplay: string | null;
-  payDestinations: string[];
+  payDestDisplays: string[];
+  founderDisplay: string | null;
   tokens: { usdc: string; usdt: string; nvdac: string; aerodromeRouter: string };
 };
 
@@ -63,6 +67,12 @@ export type FlashOrdersStatus = {
   orders: FlashOrderLive[];
 };
 
+export type ChatAuth = {
+  chatKey?: string;
+  nonce?: string;
+  sig?: string;
+};
+
 export async function fetchStatus(): Promise<AgentStatus> {
   const res = await fetch(`${AGENT_URL}/status`);
   if (!res.ok) throw new Error("status failed");
@@ -81,11 +91,43 @@ export async function fetchFlashOrders(): Promise<FlashOrdersStatus> {
   return (await res.json()) as FlashOrdersStatus;
 }
 
-export async function postChat(prompt: string, chatKey?: string): Promise<ChatReply> {
+export async function fetchChallenge(): Promise<{ nonce: string; message: string }> {
+  const res = await fetch(`${AGENT_URL}/auth/challenge`);
+  if (!res.ok) throw new Error("challenge failed");
+  return (await res.json()) as { nonce: string; message: string };
+}
+
+export async function fetchFounderOk(address: string): Promise<boolean> {
+  const res = await fetch(
+    `${AGENT_URL}/auth/founder-ok?address=${encodeURIComponent(address)}`,
+  );
+  if (!res.ok) return false;
+  const body = (await res.json()) as { ok?: boolean };
+  return body.ok === true;
+}
+
+export async function postPause(paused: boolean, chatKey?: string): Promise<{ paused: boolean }> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (chatKey) headers[CHAT_KEY_HEADER] = chatKey;
+  const res = await fetch(`${AGENT_URL}/pause`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ paused }),
+  });
+  const body = (await res.json()) as { paused?: boolean; message?: string; error?: string };
+  if (!res.ok) {
+    throw new Error(body.message ?? body.error ?? "pause failed");
+  }
+  return { paused: body.paused === true };
+}
+
+export async function postChat(prompt: string, auth?: ChatAuth): Promise<ChatReply> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-  if (chatKey) headers[CHAT_KEY_HEADER] = chatKey;
+  if (auth?.chatKey) headers[CHAT_KEY_HEADER] = auth.chatKey;
+  if (auth?.nonce) headers[CHAT_NONCE_HEADER] = auth.nonce;
+  if (auth?.sig) headers[CHAT_SIG_HEADER] = auth.sig;
   const res = await fetch(`${AGENT_URL}/chat`, {
     method: "POST",
     headers,

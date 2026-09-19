@@ -23,6 +23,9 @@
     { "source": "/treasury", "destination": { "service": "agent" } },
     { "source": "/flash-orders", "destination": { "service": "agent" } },
     { "source": "/chat", "destination": { "service": "agent" } },
+    { "source": "/pause", "destination": { "service": "agent" } },
+    { "source": "/auth/challenge", "destination": { "service": "agent" } },
+    { "source": "/auth/founder-ok", "destination": { "service": "agent" } },
     { "source": "/(.*)", "destination": { "service": "web" } }
   ]
 }

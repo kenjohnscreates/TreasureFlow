@@ -2,10 +2,12 @@ import { type Address, getAddress, isAddress } from "viem";
 import { AppError } from "../errors.ts";
 import { NVDAC_DECIMALS, USDC_DECIMALS } from "../config/constants.ts";
 
+export type PayDestAlias = "PAY_DEST_1" | "PAY_DEST_2";
+
 export type PayIntent = {
   kind: "pay";
   amountUsdc: bigint;
-  to: Address;
+  to: Address | PayDestAlias;
   raw: string;
 };
 
@@ -35,7 +37,7 @@ export type Intent =
   | LimitsIntent
   | RejectedIntent;
 
-const PAY_RE = /send\s+([\d,]+(?:\.\d+)?)\s*usdc\s+to\s+(0x[a-fA-F0-9]{40})/i;
+const PAY_RE = /send\s+([\d,]+(?:\.\d+)?)\s*usdc\s+to\s+(0x[a-fA-F0-9]{40}|PAY_DEST_[12])/i;
 const DEPOSIT_RE = /deposit\s+([\d,]+(?:\.\d+)?)\s*(usdc|nvdac?)\b/i;
 const LP_RE = /^\s*lp(?:\s+(?:stocks|nvdac?))?\s*$/i;
 const SWEEP_RE = /^\s*sweep\b/i;
@@ -51,15 +53,34 @@ export function parseTokenAmount(rawAmount: string, decimals: number): bigint {
 function parsePay(raw: string): PayIntent | undefined {
   const match = raw.trim().match(PAY_RE);
   if (!match?.[1] || !match[2]) return undefined;
-  if (!isAddress(match[2])) {
-    throw new AppError("bad_address", `Not an address: ${match[2]}`);
+  const destRaw = match[2];
+  if (/^PAY_DEST_[12]$/i.test(destRaw)) {
+    const alias = destRaw.toUpperCase() as PayDestAlias;
+    return {
+      kind: "pay",
+      amountUsdc: parseTokenAmount(match[1], USDC_DECIMALS),
+      to: alias,
+      raw,
+    };
+  }
+  if (!isAddress(destRaw)) {
+    throw new AppError("bad_address", `Not an address: ${destRaw}`);
   }
   return {
     kind: "pay",
     amountUsdc: parseTokenAmount(match[1], USDC_DECIMALS),
-    to: getAddress(match[2]),
+    to: getAddress(destRaw),
     raw,
   };
+}
+
+export function resolvePayDest(
+  to: Address | PayDestAlias,
+  allowlist: Address[],
+): Address | undefined {
+  if (to === "PAY_DEST_1") return allowlist[0];
+  if (to === "PAY_DEST_2") return allowlist[1];
+  return to;
 }
 
 function parseDeposit(raw: string): DepositIntent | undefined {

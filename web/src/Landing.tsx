@@ -311,19 +311,19 @@ const FAQ = [
   },
   {
     q: "Can idle cash actually add runway?",
-    a: "Cash that sits is weeks you do not get back. Cash that works overnight is extra time before you raise or hit revenue. TreasureFlow does not quote a forward number. The screen shows trailing fee yield from the pool you are in. The point is the money is growing instead of waiting.",
+    a: "Cash that sits is weeks you do not get back. Cash that works overnight is extra time before you raise or hit revenue. TreasureFlow does not quote a forward number. The screen shows trailing fee yield from the pool you are in. Fee yield only. The point is the money is growing instead of waiting.",
   },
   {
     q: "Can the agent spend my personal wallet?",
-    a: "No. You connect one external wallet for rewards and deposits. You sign those yourself. The agent only moves the company treasury it already holds.",
+    a: "No. You connect one external wallet. The founder signs deposits. You sign those yourself. The agent only moves the company treasury it already holds.",
   },
   {
     q: "Is this a yield promise?",
-    a: "No. TreasureFlow is not a fund and not a rate. You keep your own USDC. Fee yield is whatever the pool paid, shown after the fact.",
+    a: "No. TreasureFlow is not a fund and not a rate. You keep your own USDC. Fee yield is whatever the pool paid, shown after the fact. Fee yield only.",
   },
   {
     q: "What happens when I need to pay someone?",
-    a: "Type the amount and the address. If the cash buffer is short, the agent unwinds only the shortfall from the pool, then sends. Payments over your cap do not go out.",
+    a: "Type the amount and the destination. If the cash buffer is short, the agent unwinds only the shortfall from the pool, then sends. Pause stops outbound. Payments over the cap do not go out.",
   },
   {
     q: "Who is this for?",
@@ -331,7 +331,7 @@ const FAQ = [
   },
   {
     q: "What stops a bad send?",
-    a: "An allowlist, a per-payment cap in the connected wallet, a daily cap, and a cash buffer that is never swept. If a send is over the cap, nothing moves.",
+    a: "An allowlist, a per-payment cap in the agent (not the connected wallet), a daily cap, and a cash buffer that is never swept. Pause stops outbound. If a send is over the cap, nothing moves.",
   },
 ];
 

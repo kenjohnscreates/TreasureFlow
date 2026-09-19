@@ -1,7 +1,7 @@
 import { formatUnits, getAddress } from "viem";
 import { loadConfig } from "../config/load.ts";
 import { USDC_DECIMALS, usdc } from "../config/constants.ts";
-import { parseIntent } from "../chat/intent.ts";
+import { parseIntent, resolvePayDest } from "../chat/intent.ts";
 import { planPay, planSweep } from "../sweep/plan.ts";
 import { buildLimitLadder } from "../flash/ladder.ts";
 import { log } from "../log.ts";
@@ -52,10 +52,12 @@ export async function runDemo(): Promise<void> {
     const prompt = `send ${formatUnits(config.policy.demoPayUsdc, USDC_DECIMALS)} USDC to ${dest}`;
     const intent = parseIntent(prompt);
     if (intent.kind !== "pay") throw new AppError("parse", "demo pay prompt failed");
+    const to = resolvePayDest(intent.to, liveConfig.payDestinations);
+    if (!to) throw new AppError("missing_pay_dest", "PAY_DEST_1 is required");
     const pay = planPay({
       snapshot: snapshot(),
       amountUsdc: intent.amountUsdc,
-      to: intent.to,
+      to,
       config: liveConfig,
       spend: [],
     });
