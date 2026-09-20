@@ -88,7 +88,7 @@ describe("B44 increase existing Slipstream NFT", () => {
 
   it("increases #6356494 with no mint label and no gauge deposit", async () => {
     const submitted: string[] = [];
-    const runEntry = vi.fn(async (phase: string) => {
+    const runEntry = vi.fn(async (phase: string, flags: Record<string, string>) => {
       if (phase === "plan") {
         return skill("plan", [], {
           band: { tickLower: -12000, tickUpper: -11000 },
@@ -135,7 +135,7 @@ describe("B44 increase existing Slipstream NFT", () => {
   });
 
   it("falls back to mint when no live NFT exists", async () => {
-    const runEntry = vi.fn(async (phase: string) => {
+    const runEntry = vi.fn(async (phase: string, _flags: Record<string, string>) => {
       if (phase === "plan") {
         return skill("plan", [], {
           band: { tickLower: -12000, tickUpper: -11000 },
@@ -189,7 +189,7 @@ describe("B44 increase existing Slipstream NFT", () => {
         readNvdaSlipstreamLps: vi.fn(async () => [
           { tokenId: INCREASE_ID, staked: true },
         ]),
-        runEntry: vi.fn(async (phase: string) => {
+        runEntry: vi.fn(async (phase: string, _flags: Record<string, string>) => {
           if (phase === "plan") {
             return skill("plan", [], {
               band: { tickLower: -1, tickUpper: 1 },
