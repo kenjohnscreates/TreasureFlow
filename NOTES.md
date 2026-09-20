@@ -426,3 +426,7 @@ Running build notes. One entry per task.
 - Rewrote `README.md` for GitHub / Runtime judges: live Vercel is read-mostly, can vs cannot, chip table with amounts, repo map, truncated wallets, BaseScan proof, message Kenny (`kenjohnscreates`) for write access. No keys. Caps 15 / 10 / 30 / 15.
 - Landing: judge note under Enter app plus FAQ "I'm a Runtime judge. What can I click?". `HANDOFF-BANKR.md` points at README. Historical banners on `PRD.md`, `BUILD-PLAN.md`, `docs/INDEX.md`.
 - Assumed: judges land on treasureflow.vercel.app first. Not verified: a judge GitHub account without repo access. Treasury `0x4c9D...a6c2`. No secrets.
+
+## Hide judge copy on the landing during demo
+
+- Removed the landing-hero judge note and the Runtime-judge FAQ so the recorded demo is pitch + Enter app only. GitHub README still has the judge brief. Caps 15 / 10 / 30 / 15.

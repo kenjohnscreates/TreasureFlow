@@ -333,10 +333,6 @@ const FAQ = [
     q: "What stops a bad send?",
     a: "An allowlist, a per-payment cap in the agent (not the connected wallet), a daily cap, and a cash buffer that is never swept. Pause stops outbound. If a send is over the cap, nothing moves.",
   },
-  {
-    q: "I'm a Runtime judge. What can I click?",
-    a: "Enter app is live and read-mostly. You can inspect the treasury, positions, Flash orders, receipts, and approved wallets. Chat returns plans. Send $50 is rejected by the per-call cap. Live sends, LP, sweep, Flash, Pause, and deposits need the founder wallet plus a write key we do not publish. Message Kenny on GitHub (kenjohnscreates) if you need access or a walkthrough.",
-  },
 ];
 
 export function Landing() {
@@ -379,11 +375,6 @@ export function Landing() {
           <a className="btn landing-cta" href="/app" onClick={enterApp}>
             Enter app
           </a>
-          <p className="landing-judge">
-            Runtime judges: the live app is read-mostly. Inspect the treasury,
-            positions, Flash orders, and receipts. Live writes need founder
-            access. Message Kenny on GitHub (kenjohnscreates) if you need help.
-          </p>
         </div>
         <CapitalFlow />
       </main>

@@ -902,16 +902,6 @@ td {
   font-size: 20px;
 }
 
-.landing-judge {
-  margin: 16px auto 0;
-  max-width: 46ch;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.45;
-  color: var(--muted);
-  text-align: center;
-}
-
 .landing-faq {
   display: flex;
   flex-direction: column;
