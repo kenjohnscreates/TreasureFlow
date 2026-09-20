@@ -411,3 +411,7 @@ Running build notes. One entry per task.
 ## B44 chips stay inside the chat card
 
 - Quick-action chips wrap inside `.chip-block` only (`min-width: 0`, `max-width: 100%`, `overflow: hidden`). They no longer spill past the Ask TreasureFlow panel edge. Labels unchanged. Caps 15 / 10 / 30 / 15.
+
+## B45 chip-block box
+
+- `.chip-block` is a visible box under the composer (8px padding, 1px line, 12px radius). Chips wrap inside that box only. Caps 15 / 10 / 30 / 15.
