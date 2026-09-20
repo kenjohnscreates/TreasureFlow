@@ -6,7 +6,8 @@ const DEFAULT_PATH = path.join(".data", "lp.json");
 export type LpRecord = {
   market: string;
   usd: number;
-  mintTx: string;
+  mintTx?: string;
+  increaseTx?: string;
   tokenId?: string;
   route?: string;
   hashes: string[];

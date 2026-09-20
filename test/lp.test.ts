@@ -122,7 +122,23 @@ describe("chat lp stocks", () => {
     const reply = handleChat("lp NVDAc", loadConfig());
     expect(reply.plan.action).toBe("lp_stocks");
     expect(reply.plan.sent).toBe(false);
+    expect(reply.plan.mode).toBe("mint");
     expect(coreAllowlist()).toContain(BASE.slipstreamNpmEquity);
     expect(coreAllowlist()).toContain(BASE.aerodromeRouter);
+  });
+
+  it("reads increase notional from the position $ label", () => {
+    const tx = parseSkillTx({
+      to: BASE.slipstreamNpmEquity,
+      data: "0x219f5d17000000000000000000000000000000000000000000000000000000000060f7be",
+      value: "0",
+      chainId: 8453,
+      label: "increase NVDA position $10.00 at $209.38 - $228.86",
+    });
+    expect(spendNotionalUsdc(tx)).toBe(10);
+    expect(() => assertUnderHardStop(tx, 15)).not.toThrow();
+    expect(() =>
+      assertUnderHardStop({ ...tx, label: "increase NVDA position $50.00 at $1 - $2" }, 15),
+    ).toThrow(AppError);
   });
 });

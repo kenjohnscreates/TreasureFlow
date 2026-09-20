@@ -77,6 +77,7 @@ export function spendNotionalUsdc(tx: SkillTx): number {
   const samm = /(?:add|remove) sAMM .* \$([0-9]+(?:\.[0-9]+)?)/.exec(tx.label);
   if (samm?.[1]) return Number(samm[1]);
   if (/^approve /i.test(tx.label) || /^stake /i.test(tx.label)) return 0;
+  if (/unstake/i.test(tx.label)) return 0;
   throw new AppError("skill_label", "skill tx label has no spend notional");
 }
 

@@ -110,6 +110,7 @@ export const SEL = {
   ownerOf: "0x6352211e",
   tokenOfOwnerByIndex: "0x2f745c59",
   mint: "0xb5007d1f", // 12-word static tuple (Slipstream: tickSpacing + trailing sqrtPriceX96)
+  increaseLiquidity: "0x219f5d17", // 6-word Uniswap-v3 tuple
   decreaseLiquidity: "0x0c49ccbe",
   collect: "0xfc6f7865",
   burn: "0x42966c68",

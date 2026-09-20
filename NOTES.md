@@ -415,3 +415,8 @@ Running build notes. One entry per task.
 ## B45 chip-block box
 
 - `.chip-block` is a visible box under the composer (8px padding, 1px line, 12px radius). Chips wrap inside that box only. Caps 15 / 10 / 30 / 15.
+
+## B46 increase existing Slipstream NFT
+
+- Chat `lp stocks` Confirm adds $10 to live NVDAc NFT `#6356494` via `increaseLiquidity` (same token id, no unstake). Mint only if no live NVDAc NFT. Copy says add to NFT, not mint. Caps 15 / 10 / 30 / 15.
+- Tests 202. `test/b44.test.ts` + `test/lp.test.ts`. Vendor selftest 37 including increase 6-word vector. `pnpm test` + `pnpm --dir web exec tsc --noEmit` pass. No `--live`. No Confirm. Treasury `0x4c9D...a6c2`. No secrets.

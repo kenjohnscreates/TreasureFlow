@@ -93,6 +93,17 @@ const mintData =
   uintWord(1755800000) +
   uintWord(0);
 check("mint calldata = 4 + 12*32 bytes", mintData.length === 2 + (4 + 12 * 32) * 2);
+const increaseData =
+  SEL.increaseLiquidity +
+  uintWord(6356494n) +
+  uintWord(5000000n) +
+  uintWord(160000n) +
+  uintWord(0) +
+  uintWord(0) +
+  uintWord(1755800000);
+check("increaseLiquidity selector", increaseData.slice(0, 10) === "0x219f5d17");
+check("increaseLiquidity calldata = 4 + 6*32 bytes", increaseData.length === 2 + (4 + 6 * 32) * 2);
+check("increaseLiquidity tokenId word", increaseData.slice(10, 74) === uintWord(6356494n));
 const swapData =
   SEL.exactInputSingle +
   addrWord("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913") +

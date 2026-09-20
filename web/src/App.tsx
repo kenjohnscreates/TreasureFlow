@@ -575,8 +575,8 @@ function ChatPanel({
         setPending({
           prompt: text,
           kind: reply.kind,
-          amount: String(reply.plan.amountUsdc ?? reply.plan.qtyUsdc ?? ""),
-          dest: String(reply.plan.to ?? ""),
+          amount: String(reply.plan.amountUsdc ?? reply.plan.qtyUsdc ?? reply.plan.usd ?? ""),
+          dest: String(reply.plan.to ?? reply.plan.tokenId ?? ""),
         });
         setConfirmErr("");
       } else {
@@ -734,7 +734,9 @@ function ConfirmModal({
     pending.kind === "sweep"
       ? `Sweep extra cash into USDC/USDT. Caps ${caps}.`
       : pending.kind === "lp_stocks"
-        ? `LP stocks (NVDAc). Notional under 15 USDC. Caps ${caps}.`
+        ? pending.dest
+          ? `Add $${pending.amount || "10"} to Slipstream NFT #${pending.dest}. Caps ${caps}.`
+          : `Mint Slipstream NVDAc LP. Notional under 15 USDC. Caps ${caps}.`
         : pending.kind === "demo_flash"
           ? `Market buy cbBTC. Spend ${pending.amount || "0"} USDC. 5% slippage. This is a market order. Does not promise a fill. Caps ${caps}.`
           : pending.kind === "dip_flash"

@@ -32,6 +32,7 @@ import {
   wordAt,
   toBigInt,
   toInt,
+  toAddr,
   getReceipt,
   geckoPool,
   aeroSpot,
@@ -77,6 +78,41 @@ function need(name) {
   return v;
 }
 
+function optionalTokenId() {
+  const v = args["token-id"];
+  if (v === undefined || v === true) return null;
+  try {
+    const id = BigInt(v);
+    if (id <= 0n) fail("args", "--token-id must be > 0");
+    return id;
+  } catch {
+    fail("args", "--token-id is not an integer");
+  }
+  return null;
+}
+
+async function readExistingBand(M, tokenId) {
+  const posRes = await ethCall(M.npm, SEL.positions + uintWord(tokenId));
+  if (!posRes) fail("position", "positions read failed");
+  const token0 = toAddr(wordAt(posRes, 2));
+  const token1 = toAddr(wordAt(posRes, 3));
+  const tickLower = Number(toInt(wordAt(posRes, 5)));
+  const tickUpper = Number(toInt(wordAt(posRes, 6)));
+  const liq = toBigInt(wordAt(posRes, 7));
+  if (token0.toLowerCase() !== USDC.toLowerCase()) fail("position", "token0 is not USDC");
+  if (token1.toLowerCase() !== M.token.toLowerCase()) fail("position", "token1 is not this market");
+  if (liq === 0n) fail("position", "liquidity is 0");
+  if (!Number.isInteger(tickLower) || !Number.isInteger(tickUpper) || tickLower >= tickUpper) {
+    fail("position", "ticks invalid");
+  }
+  return {
+    tickLower,
+    tickUpper,
+    bandLow: priceFromTick(tickUpper, M.decimals),
+    bandHigh: priceFromTick(tickLower, M.decimals),
+  };
+}
+
 const deadline = () => Math.floor(Date.now() / 1000) + 600;
 
 // Approve MAX, never exact: pool math rounds amounts owed up a wei and an
@@ -94,7 +130,9 @@ async function plan() {
   const M = getMarket(market);
   const usd = Number(need("usd"));
   const wallet = need("wallet");
+  const existingId = optionalTokenId();
   if (!(usd > 0)) fail("args", "--usd must be > 0");
+  const existingBand = existingId ? await readExistingBand(M, existingId) : null;
 
   // quote gate inputs are REQUIRED — no fresh real quote, no entry, period.
   if (M.kind === "equity" && (args.quote === undefined || args["quote-age-s"] === undefined)) {
@@ -178,13 +216,18 @@ async function plan() {
       value: gecko.change24hPct,
       limit: `|24h move| < ${volBrake}%`,
     },
-    { name: "vol-input", pass: w > 0, value: w ?? null, limit: "honest w required (no guess)" },
   ];
+  if (!existingBand) {
+    gates.push({ name: "vol-input", pass: w > 0, value: w ?? null, limit: "honest w required (no guess)" });
+  }
   const failed = gates.find((g) => !g.pass);
   if (failed) fail(failed.name, failed.limit, { gates });
 
   // ---------- band + swap sizing ----------
-  const band = buildBand(poolPrice, quote, w, width, M.decimals, M.tickSpacing);
+  // Increase reuses the live NFT ticks. A new IV band would mint a second NFT.
+  const band = existingBand
+    ? existingBand
+    : buildBand(poolPrice, quote, w, width, M.decimals, M.tickSpacing);
   const share = stockShare((poolPrice + quote) / 2, band.bandLow, band.bandHigh);
 
   // absorb loose stock already in the wallet (read with the gate batch above)
@@ -235,8 +278,9 @@ async function plan() {
       tickLower: band.tickLower,
       tickUpper: band.tickUpper,
       width,
-      w: +w.toFixed(5),
+      w: w > 0 ? +w.toFixed(5) : 0,
     },
+    ...(existingId ? { tokenId: String(existingId), mode: "increase" } : { mode: "mint" }),
     stockShare: +share.toFixed(4),
     looseStockAbsorbedUsd: +looseStockUsd.toFixed(2),
     needsConcentrationConfirm: usd > 0.5 * usdcBal,
@@ -246,12 +290,15 @@ async function plan() {
     walletEth: walletEth !== null ? +walletEth.toFixed(6) : null,
     gasLowNeedsTopUp: walletEth !== null ? walletEth < GAS_MIN_ETH : null,
     txs,
-    report: `Deposit $${usd} into the ${market} pool at $${band.bandLow.toFixed(2)} – $${band.bandHigh.toFixed(2)}?`,
+    report: existingId
+      ? `Add $${usd} to ${market} NFT #${existingId} at $${band.bandLow.toFixed(2)} – $${band.bandHigh.toFixed(2)}?`
+      : `Deposit $${usd} into the ${market} pool at $${band.bandLow.toFixed(2)} – $${band.bandHigh.toFixed(2)}?`,
     next:
       (txs.length > 0
         ? "submit txs in order via Bankr (confirm with user first), then run: "
         : "no swap needed; run: ") +
-      `entry.mjs size --market ${market} --usd ${usd} --wallet ${wallet} --tick-lower ${band.tickLower} --tick-upper ${band.tickUpper}`,
+      `entry.mjs size --market ${market} --usd ${usd} --wallet ${wallet} --tick-lower ${band.tickLower} --tick-upper ${band.tickUpper}` +
+      (existingId ? ` --token-id ${existingId}` : ""),
   });
 }
 
@@ -261,6 +308,7 @@ async function size() {
   const M = getMarket(market);
   const wallet = need("wallet");
   const usd = Number(need("usd"));
+  const existingId = optionalTokenId();
 
   // re-read slot0 AFTER the swap — your own swap moved the price
   const [slot0Res, usdcBalRes, stockBalRes, a0Res, a1Res] = await multicall([
@@ -273,11 +321,11 @@ async function size() {
   if (!slot0Res.ok) fail("rpc", "slot0 read failed");
   const price = priceFromSqrtX96(toBigInt(wordAt(slot0Res.data, 0)), M.decimals);
 
-  // Prefer the EXACT ticks from plan's output (--tick-lower/--tick-upper);
-  // fall back to re-snapping from band prices (rounded prices can shift a
-  // snap boundary by one spacing).
+  // Prefer live NFT ticks when increasing. Else the EXACT ticks from plan.
   let band;
-  if (args["tick-lower"] !== undefined && args["tick-upper"] !== undefined) {
+  if (existingId) {
+    band = await readExistingBand(M, existingId);
+  } else if (args["tick-lower"] !== undefined && args["tick-upper"] !== undefined) {
     const tickLower = Number(args["tick-lower"]);
     const tickUpper = Number(args["tick-upper"]);
     if (
@@ -311,26 +359,40 @@ async function size() {
   const usdcAvail = usdcRaw > dust ? usdcRaw - dust : 0n;
   const amount0 = usdcAvail < BigInt(Math.round(usdcBudget * 1e6)) ? usdcAvail : BigInt(Math.round(usdcBudget * 1e6));
 
+  const notional = (Number(amount0) / 1e6 + stockUsd).toFixed(2);
+  const bandLabel = `$${band.bandLow.toFixed(2)} – $${band.bandHigh.toFixed(2)}`;
   const txs = [
     ...approveTxIfNeeded(a0Res.ok ? wordAt(a0Res.data, 0) : null, USDC, M.npm, amount0, "approve USDC -> NPM"),
     ...approveTxIfNeeded(a1Res.ok ? wordAt(a1Res.data, 0) : null, M.token, M.npm, stockRaw, `approve ${market} -> NPM`),
-    tx(
-      M.npm,
-      SEL.mint +
-        addrWord(USDC) +
-        addrWord(M.token) +
-        intWord(M.tickSpacing) +
-        intWord(band.tickLower) +
-        intWord(band.tickUpper) +
-        uintWord(amount0) +
-        uintWord(stockRaw) +
-        uintWord(0) +
-        uintWord(0) +
-        addrWord(wallet) +
-        uintWord(deadline()) +
-        uintWord(0), // sqrtPriceX96 = 0: pool must already exist
-      `mint ${market} position $${(Number(amount0) / 1e6 + stockUsd).toFixed(2)} at $${band.bandLow.toFixed(2)} – $${band.bandHigh.toFixed(2)}`
-    ),
+    existingId
+      ? tx(
+          M.npm,
+          SEL.increaseLiquidity +
+            uintWord(existingId) +
+            uintWord(amount0) +
+            uintWord(stockRaw) +
+            uintWord(0) +
+            uintWord(0) +
+            uintWord(deadline()),
+          `increase ${market} position $${notional} at ${bandLabel}`,
+        )
+      : tx(
+          M.npm,
+          SEL.mint +
+            addrWord(USDC) +
+            addrWord(M.token) +
+            intWord(M.tickSpacing) +
+            intWord(band.tickLower) +
+            intWord(band.tickUpper) +
+            uintWord(amount0) +
+            uintWord(stockRaw) +
+            uintWord(0) +
+            uintWord(0) +
+            addrWord(wallet) +
+            uintWord(deadline()) +
+            uintWord(0),
+          `mint ${market} position $${notional} at ${bandLabel}`,
+        ),
   ];
 
   out({
@@ -341,9 +403,14 @@ async function size() {
     band: { low: +band.bandLow.toFixed(4), high: +band.bandHigh.toFixed(4), tickLower: band.tickLower, tickUpper: band.tickUpper },
     amount0Usdc: Number(amount0) / 1e6,
     amount1Stock: Number(stockRaw) / 10 ** M.decimals,
+    ...(existingId ? { tokenId: String(existingId), mode: "increase" } : { mode: "mint" }),
     txs,
-    report: `Mint sized at post-swap price $${price.toFixed(2)}.`,
-    next: "submit txs in order via Bankr, then run: entry.mjs settle --mint-tx <hash>",
+    report: existingId
+      ? `Increase #${existingId} sized at post-swap price $${price.toFixed(2)}.`
+      : `Mint sized at post-swap price $${price.toFixed(2)}.`,
+    next: existingId
+      ? `submit txs in order via Bankr, then run: entry.mjs settle --token-id ${existingId}`
+      : "submit txs in order via Bankr, then run: entry.mjs settle --mint-tx <hash>",
   });
 }
 
@@ -352,21 +419,25 @@ async function settle() {
   const market = need("market");
   const M = getMarket(market);
   const wallet = need("wallet");
-  const mintTx = need("mint-tx");
+  const existingId = optionalTokenId();
+  let tokenId;
+  if (existingId) {
+    tokenId = existingId;
+  } else {
+    const mintTx = need("mint-tx");
+    const receipt = await getReceipt(mintTx);
+    if (!receipt) fail("receipt", "tx not found or not yet mined — retry when mined");
+    if (receipt.status !== "0x1") fail("receipt", `mint tx reverted (status ${receipt.status})`);
 
-  const receipt = await getReceipt(mintTx);
-  if (!receipt) fail("receipt", "tx not found or not yet mined — retry when mined");
-  if (receipt.status !== "0x1") fail("receipt", `mint tx reverted (status ${receipt.status})`);
-
-  // tokenId comes from the mined receipt, never a simulation
-  const log = (receipt.logs || []).find(
-    (l) =>
-      l.address.toLowerCase() === M.npm.toLowerCase() &&
-      l.topics?.[0] === ERC721_TRANSFER_TOPIC &&
-      toBigInt(l.topics?.[1]?.slice(2)) === 0n
-  );
-  if (!log) fail("receipt", "mint mined but no NPM Transfer-from-zero log — recover from chain, do NOT re-mint");
-  const tokenId = toBigInt(log.topics[3].slice(2));
+    const log = (receipt.logs || []).find(
+      (l) =>
+        l.address.toLowerCase() === M.npm.toLowerCase() &&
+        l.topics?.[0] === ERC721_TRANSFER_TOPIC &&
+        toBigInt(l.topics?.[1]?.slice(2)) === 0n
+    );
+    if (!log) fail("receipt", "mint mined but no NPM Transfer-from-zero log — recover from chain, do NOT re-mint");
+    tokenId = toBigInt(log.topics[3].slice(2));
+  }
   const idW = uintWord(tokenId);
 
   // route decision (§6): compare the POTS per unit of in-range liquidity
@@ -388,18 +459,20 @@ async function settle() {
   const [gecko, spot] = await Promise.all([geckoPool(M.pool), aeroSpot()]);
   const feePotYr = gecko.vol24hUsd * M.fee * 365;
   const emisPotYr = ratePerSec * 31536000 * spot;
-  // per unit of in-range liquidity; prospective staked includes your own dilution
   const feePerL = poolL > 0n ? (feePotYr * (1 - skim)) / Number(poolL) : 0;
   const emisPerL = (emisPotYr) / Number(stakedL + yourL || 1n);
   const route = emisPerL > feePerL ? "staked" : "unstaked";
 
+  // Increase: never unstake/restake. Extra liquidity stays on the same NFT.
   const txs =
-    route === "staked"
-      ? [
-          tx(M.npm, SEL.approve + addrWord(M.gauge) + idW, `approve NFT #${tokenId} -> gauge`),
-          tx(M.gauge, SEL.gaugeDeposit + idW, `stake #${tokenId} for AERO emissions`),
-        ]
-      : [];
+    existingId
+      ? []
+      : route === "staked"
+        ? [
+            tx(M.npm, SEL.approve + addrWord(M.gauge) + idW, `approve NFT #${tokenId} -> gauge`),
+            tx(M.gauge, SEL.gaugeDeposit + idW, `stake #${tokenId} for AERO emissions`),
+          ]
+        : [];
 
   // record the two unrecoverable fields
   const statePathArg = args["state-path"];
@@ -428,22 +501,35 @@ async function settle() {
     ].slice(-10);
   }
 
-  state.positions = (state.positions || []).filter((p) => p.tokenId !== String(tokenId));
-  state.positions.push({
-    market,
-    tokenId: String(tokenId),
-    entryUsd,
-    enteredAt: now,
-    lastMintAt: now,
-    recenters,
-  });
+  const idStr = String(tokenId);
+  const prior = (state.positions || []).find((p) => p.tokenId === idStr);
+  state.positions = (state.positions || []).filter((p) => p.tokenId !== idStr);
+  if (existingId && prior) {
+    const priorUsd = typeof prior.entryUsd === "number" ? prior.entryUsd : 0;
+    const addUsd = typeof entryUsd === "number" ? entryUsd : 0;
+    state.positions.push({
+      ...prior,
+      entryUsd: priorUsd + addUsd,
+      lastMintAt: now,
+    });
+  } else {
+    state.positions.push({
+      market,
+      tokenId: idStr,
+      entryUsd,
+      enteredAt: now,
+      lastMintAt: now,
+      recenters,
+    });
+  }
   saveState(state, statePathArg);
 
   out({
     ok: true,
     phase: "settle",
     market,
-    tokenId: String(tokenId),
+    tokenId: idStr,
+    mode: existingId ? "increase" : "mint",
     route,
     routeMath: {
       feePotYrUsd: +feePotYr.toFixed(0),
@@ -460,10 +546,11 @@ async function settle() {
         ? "recenter recorded WITHOUT --direction — the trend brake cannot match it; pass --direction up|down next time"
         : null,
     memoryLine: `aero-stock-lp: active Aerodrome LP positions on Base — see ~/.aero-stock-lp/state.json. Manage with the aero-stock-lp skill.`,
-    report:
-      route === "staked"
-        ? `Position #${tokenId} minted; staking wins (emissions pot $${Math.round(emisPotYr)}/yr vs fee pot $${Math.round(feePotYr)}/yr) — submit the 2 stake txs.`
-        : `Position #${tokenId} minted; fee route wins — NFT stays in the wallet, done.`,
+    report: existingId
+      ? `Added to position #${idStr}. Same NFT. Did not mint. Did not stake.`
+      : route === "staked"
+        ? `Position #${idStr} minted; staking wins (emissions pot $${Math.round(emisPotYr)}/yr vs fee pot $${Math.round(feePotYr)}/yr) — submit the 2 stake txs.`
+        : `Position #${idStr} minted; fee route wins — NFT stays in the wallet, done.`,
     next: txs.length ? "submit stake txs via Bankr, then report to the user" : "report to the user",
   });
 }

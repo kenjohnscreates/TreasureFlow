@@ -182,4 +182,28 @@ export const SLIPSTREAM_NPM_ABI = [
       { name: "amount1", type: "uint256" },
     ],
   },
+  {
+    type: "function",
+    name: "increaseLiquidity",
+    stateMutability: "payable",
+    inputs: [
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          { name: "tokenId", type: "uint256" },
+          { name: "amount0Desired", type: "uint256" },
+          { name: "amount1Desired", type: "uint256" },
+          { name: "amount0Min", type: "uint256" },
+          { name: "amount1Min", type: "uint256" },
+          { name: "deadline", type: "uint256" },
+        ],
+      },
+    ],
+    outputs: [
+      { name: "liquidity", type: "uint128" },
+      { name: "amount0", type: "uint256" },
+      { name: "amount1", type: "uint256" },
+    ],
+  },
 ] as const;

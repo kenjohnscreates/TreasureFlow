@@ -126,24 +126,34 @@ export async function maybeSubmitChatLp(
     if (!result.sent) {
       return {
         kind: "lp_stocks",
-        summary: `LP stocks noop (${result.reason}). Did not mint.`,
+        summary:
+          result.mode === "increase"
+            ? `LP stocks noop (${result.reason}). Did not increase.`
+            : `LP stocks noop (${result.reason}). Did not mint.`,
         plan: {
           ...reply.plan,
           sent: false,
           reason: result.reason,
           usd: result.usd,
+          mode: result.mode,
+          ...(result.tokenId ? { tokenId: result.tokenId } : {}),
         },
       };
     }
     const mintTrunc = result.mintTx ? truncateAddress(result.mintTx) : "";
+    const added = result.mode === "increase" && result.tokenId;
     return {
       kind: "lp_stocks",
-      summary: `LP stocks submitted. Notional $${result.usd}. Mint ${mintTrunc}.`,
+      summary: added
+        ? `Added $${result.usd} to NFT #${result.tokenId}.`
+        : `LP stocks submitted. Notional $${result.usd}. Mint ${mintTrunc}.`,
       plan: {
         ...reply.plan,
         sent: true,
         usd: result.usd,
+        mode: result.mode,
         ...(result.mintTx ? { mintTx: mintTrunc } : {}),
+        ...(result.increaseTx ? { increaseTx: truncateAddress(result.increaseTx) } : {}),
         ...(result.tokenId ? { tokenId: result.tokenId } : {}),
         ...(typeof result.amount0Usdc === "number" ? { amount0Usdc: result.amount0Usdc } : {}),
       },

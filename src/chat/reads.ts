@@ -396,6 +396,17 @@ export async function chatLiveOpts(config: AppConfig, prompt: string): Promise<C
     opts.snapshot = portfolioToSnapshot(snap, lpValueUsdc);
   }
 
+  if (intent.kind === "lp_stocks") {
+    const owner = snap?.evmAddress ?? config.treasuryAddress;
+    if (owner && config.baseRpcUrl) {
+      try {
+        opts.slipstream = await readNvdaSlipstreamLps(owner, config.baseRpcUrl);
+      } catch {
+        /* plan as mint if discovery fails */
+      }
+    }
+  }
+
   if (intent.kind === "pay" || intent.kind === "demo_flash" || intent.kind === "dip_flash") {
     opts.spend = await loadSpendSafe();
   }

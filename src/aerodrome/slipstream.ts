@@ -179,3 +179,9 @@ export async function readNvdaSlipstreamLps(
   if (rows.length === 0 && transportErr) throw transportErr;
   return rows;
 }
+
+export function pickIncreaseTokenId(rows: SlipstreamLp[]): string | undefined {
+  const preferred = rows.find((row) => row.tokenId === SLIPSTREAM_NVDA_NFT_ID);
+  if (preferred) return preferred.tokenId;
+  return rows[0]?.tokenId;
+}

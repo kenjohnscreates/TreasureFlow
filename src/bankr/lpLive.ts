@@ -1,4 +1,9 @@
-import { formatUnits, parseUnits } from "viem";
+import { formatUnits, parseUnits, type Address } from "viem";
+import {
+  pickIncreaseTokenId,
+  readNvdaSlipstreamLps,
+  type SlipstreamLp,
+} from "../aerodrome/slipstream.ts";
 import { USDC_DECIMALS, type AppConfig } from "../config/constants.ts";
 import { AppError } from "../errors.ts";
 import { log } from "../log.ts";
@@ -22,15 +27,18 @@ export type LpLiveDeps = {
   appendSpend?: typeof appendSpend;
   persistLp?: typeof persistLp;
   loadSpend?: typeof loadSpend;
+  readNvdaSlipstreamLps?: typeof readNvdaSlipstreamLps;
 };
 
 export type LpLiveResult = {
   sent: boolean;
   reason: string;
   usd: number;
+  mode: "increase" | "mint";
   walletUsdc?: number;
   amount0Usdc?: number;
   mintTx?: `0x${string}`;
+  increaseTx?: `0x${string}`;
   tokenId?: string;
   route?: string;
 };
@@ -49,6 +57,21 @@ function stringField(raw: Record<string, unknown>, key: string): string | undefi
   return typeof value === "string" ? value : undefined;
 }
 
+async function discoverIncreaseId(
+  treasury: Address,
+  rpcUrl: string,
+  deps: LpLiveDeps,
+): Promise<string | undefined> {
+  if (!rpcUrl) return undefined;
+  const readFn = deps.readNvdaSlipstreamLps ?? readNvdaSlipstreamLps;
+  try {
+    const rows: SlipstreamLp[] = await readFn(treasury, rpcUrl);
+    return pickIncreaseTokenId(rows);
+  } catch {
+    return undefined;
+  }
+}
+
 export async function executeLp(args: {
   config: AppConfig;
   live: boolean;
@@ -60,7 +83,7 @@ export async function executeLp(args: {
   const usd = DEMO_LP_USD;
   if (args.usdcFree !== undefined && args.usdcFree <= 0n) {
     log("bankr_lp", { sent: false, reason: "no free USDC" });
-    return { sent: false, reason: "no free USDC", usd };
+    return { sent: false, reason: "no free USDC", usd, mode: "mint" };
   }
   const treasury = config.treasuryAddress;
   if (!treasury) throw new AppError("missing_treasury", "TREASURY_ADDRESS is required");
@@ -75,14 +98,19 @@ export async function executeLp(args: {
     source: quote.source,
     iv: NVDA_IV,
   });
-  const plan = await entry("plan", {
+  const tokenId = await discoverIncreaseId(treasury, config.baseRpcUrl, deps);
+  const increase = Boolean(tokenId);
+  const mode: "increase" | "mint" = increase ? "increase" : "mint";
+  const planFlags: Record<string, string> = {
     market: "NVDA",
     usd: String(usd),
     wallet: treasury,
     quote: String(quote.price),
     "quote-age-s": String(quote.ageS),
-    iv: String(NVDA_IV),
-  });
+  };
+  if (increase && tokenId) planFlags["token-id"] = tokenId;
+  else planFlags.iv = String(NVDA_IV);
+  const plan = await entry("plan", planFlags);
   assertPhase(plan, hardStop);
   const band = plan.raw.band;
   if (
@@ -99,7 +127,7 @@ export async function executeLp(args: {
   if (gasLow) throw new AppError("gas_low", "Base ETH below skill gas preflight");
   if (walletUsdc <= 0) {
     log("bankr_lp", { sent: false, reason: "no free USDC" });
-    return { sent: false, reason: "no free USDC", usd, walletUsdc };
+    return { sent: false, reason: "no free USDC", usd, mode, walletUsdc, ...(tokenId ? { tokenId } : {}) };
   }
   log("bankr_lp_plan", {
     ok: true,
@@ -109,16 +137,20 @@ export async function executeLp(args: {
     tickLower: ticks.tickLower,
     tickUpper: ticks.tickUpper,
     live,
+    mode,
+    ...(tokenId ? { tokenId } : {}),
     concentration: plan.raw.needsConcentrationConfirm === true,
   });
 
-  const size = await entry("size", {
+  const sizeFlags: Record<string, string> = {
     market: "NVDA",
     usd: String(usd),
     wallet: treasury,
     "tick-lower": String(ticks.tickLower),
     "tick-upper": String(ticks.tickUpper),
-  });
+  };
+  if (increase && tokenId) sizeFlags["token-id"] = tokenId;
+  const size = await entry("size", sizeFlags);
   assertPhase(size, hardStop);
   const amount0Usdc = numberField(size.raw, "amount0Usdc") ?? 0;
   if (amount0Usdc > hardStop) {
@@ -143,8 +175,10 @@ export async function executeLp(args: {
       sent: false,
       reason: "pass --live to submit",
       usd,
+      mode,
       walletUsdc,
       amount0Usdc,
+      ...(tokenId ? { tokenId } : {}),
     };
   }
   if (!config.bankrApiKey) {
@@ -171,15 +205,9 @@ export async function executeLp(args: {
   const planHashes = await submitAll(plan.txs);
   const sizeHashes: `0x${string}`[] = [];
   let mintTx: `0x${string}` | undefined;
+  let increaseTx: `0x${string}` | undefined;
   let remaining = size.txs;
   let steps = 0;
-  const sizeFlags = {
-    market: "NVDA",
-    usd: String(usd),
-    wallet: treasury,
-    "tick-lower": String(ticks.tickLower),
-    "tick-upper": String(ticks.tickUpper),
-  };
   while (remaining.length > 0 && steps < 6) {
     steps += 1;
     const next = remaining[0];
@@ -188,26 +216,35 @@ export async function executeLp(args: {
     if (!hash) throw new AppError("bankr_job", "skill tx hash missing");
     sizeHashes.push(hash);
     if (next.label.startsWith("mint ")) mintTx = hash;
+    if (next.label.startsWith("increase ")) increaseTx = hash;
     if (remaining.length === 1) break;
     const again = await entry("size", sizeFlags);
     assertPhase(again, hardStop);
     remaining = again.txs;
   }
-  if (!mintTx) throw new AppError("bankr_job", "mint tx hash missing");
+  if (increase) {
+    if (!increaseTx) throw new AppError("bankr_job", "increase tx hash missing");
+  } else if (!mintTx) {
+    throw new AppError("bankr_job", "mint tx hash missing");
+  }
 
-  const settle = await entry("settle", {
+  const settleFlags: Record<string, string> = {
     market: "NVDA",
     wallet: treasury,
-    "mint-tx": mintTx,
     "entry-usd": String(usd),
     "state-path": SKILL_STATE,
-  });
+  };
+  if (increase && tokenId) settleFlags["token-id"] = tokenId;
+  else if (mintTx) settleFlags["mint-tx"] = mintTx;
+  const settle = await entry("settle", settleFlags);
   assertPhase(settle, hardStop);
-  const tokenId = stringField(settle.raw, "tokenId");
+  const settledId = stringField(settle.raw, "tokenId") ?? tokenId;
   const route = stringField(settle.raw, "route");
   log("bankr_lp_settle", {
-    mintTx,
-    tokenId: tokenId ?? "",
+    mode,
+    ...(mintTx ? { mintTx } : {}),
+    ...(increaseTx ? { increaseTx } : {}),
+    tokenId: settledId ?? "",
     route: route ?? "",
     txs: settle.txs.length,
   });
@@ -218,19 +255,24 @@ export async function executeLp(args: {
   const record: {
     market: string;
     usd: number;
-    mintTx: string;
     hashes: string[];
+    mintTx?: string;
+    increaseTx?: string;
     tokenId?: string;
     route?: string;
-  } = { market: "NVDA", usd, mintTx, hashes };
-  if (tokenId) record.tokenId = tokenId;
+  } = { market: "NVDA", usd, hashes };
+  if (mintTx) record.mintTx = mintTx;
+  if (increaseTx) record.increaseTx = increaseTx;
+  if (settledId) record.tokenId = settledId;
   if (route) record.route = route;
   const persist = deps.persistLp ?? persistLp;
   await persist(record);
   log("bankr_lp", {
     sent: true,
-    mintTx,
-    tokenId: tokenId ?? "",
+    mode,
+    ...(mintTx ? { mintTx } : {}),
+    ...(increaseTx ? { increaseTx } : {}),
+    tokenId: settledId ?? "",
     route: route ?? "",
     amount0Usdc,
   });
@@ -238,11 +280,13 @@ export async function executeLp(args: {
     sent: true,
     reason: "lp submitted",
     usd,
+    mode,
     walletUsdc,
     amount0Usdc,
-    mintTx,
   };
-  if (tokenId) out.tokenId = tokenId;
+  if (mintTx) out.mintTx = mintTx;
+  if (increaseTx) out.increaseTx = increaseTx;
+  if (settledId) out.tokenId = settledId;
   if (route) out.route = route;
   return out;
 }

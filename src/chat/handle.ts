@@ -1,5 +1,6 @@
 import { formatUnits, type Address } from "viem";
 import { encodeTransfer } from "../aerodrome/encode.ts";
+import { pickIncreaseTokenId, type SlipstreamLp } from "../aerodrome/slipstream.ts";
 import { DEMO_LP_USD } from "../bankr/skillTx.ts";
 import { sizeTreasurySweep } from "../bankr/sweepLive.ts";
 import {
@@ -57,6 +58,7 @@ export type ChatOpts = {
   spend?: SpendEvent[];
   spotUsd?: number;
   reserveUsdc?: bigint;
+  slipstream?: SlipstreamLp[];
 };
 
 const MISSING_LIVE =
@@ -71,8 +73,30 @@ function treasuryLabel(config: AppConfig, opts: ChatOpts): string | null {
   return addr ? truncateAddress(addr) : null;
 }
 
-const LP_STOCKS_REASON =
-  "Slipstream NVDAc LP. Confirm to submit. Notional under 15 USDC. Not the nightly USDC/USDT sweep.";
+function lpStocksCopy(tokenId?: string): string {
+  if (tokenId) {
+    return `Add $${DEMO_LP_USD} to Slipstream NFT #${tokenId}. Confirm to submit. Notional under 15 USDC. Not the nightly USDC/USDT sweep.`;
+  }
+  return `Slipstream NVDAc LP. Confirm to mint. Notional under 15 USDC. Not the nightly USDC/USDT sweep.`;
+}
+
+function lpStocksPlan(config: AppConfig, opts: ChatOpts): ChatReply {
+  if (config.paused) return rejectChat("lp_stocks", "paused");
+  const tokenId = pickIncreaseTokenId(opts.slipstream ?? []);
+  const mode = tokenId ? "increase" : "mint";
+  return {
+    kind: "lp_stocks",
+    summary: lpStocksCopy(tokenId),
+    plan: {
+      action: "lp_stocks",
+      reason: lpStocksCopy(tokenId),
+      sent: false,
+      usd: DEMO_LP_USD,
+      mode,
+      ...(tokenId ? { tokenId } : {}),
+    },
+  };
+}
 
 function tokenMeta(token: DepositToken): { address: Address; decimals: number } {
   if (token === "USDC") return { address: BASE.usdc, decimals: USDC_DECIMALS };
@@ -292,20 +316,6 @@ function limitsPlan(opts: ChatOpts): ChatReply {
   };
 }
 
-function lpStocksPlan(config: AppConfig): ChatReply {
-  if (config.paused) return rejectChat("lp_stocks", "paused");
-  return {
-    kind: "lp_stocks",
-    summary: LP_STOCKS_REASON,
-    plan: {
-      action: "lp_stocks",
-      reason: LP_STOCKS_REASON,
-      sent: false,
-      usd: DEMO_LP_USD,
-    },
-  };
-}
-
 function demoFlashCopy(qtyUsdc: string): string {
   return `Market buy cbBTC. Spend ${qtyUsdc} USDC. 5% slippage. This is a market order. Does not promise a fill. Confirm to place.`;
 }
@@ -420,7 +430,7 @@ export function handleChat(
   const intent = parseIntent(raw);
   if (intent.kind === "deposit") return depositPlan(intent, config);
   if (intent.kind === "sweep") return sweepPlan(config, opts);
-  if (intent.kind === "lp_stocks") return lpStocksPlan(config);
+  if (intent.kind === "lp_stocks") return lpStocksPlan(config, opts);
   if (intent.kind === "demo_flash") return demoFlashPlan(config, opts);
   if (intent.kind === "dip_flash") return dipFlashPlan(config, opts);
   if (intent.kind === "limits") return limitsPlan(opts);
