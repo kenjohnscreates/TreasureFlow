@@ -36,7 +36,7 @@ The hosted site is **read-mostly on purpose**. You can inspect the live company 
 - See API keys, the write key, private keys, or full allowlist addresses
 - Use **Lend & Borrow** (greyed out, not in this demo)
 
-Live writes need the founder wallet plus a write key that is **not published**. If you need a confirmed onchain click during judging, message Kenny.
+Live treasury writes need the **Write key** (`CHAT_KEY` on the server, header `x-treasureflow-key`). It is not published. If you need a confirmed onchain click during judging, message Kenny.
 
 Proof already on Base is in [Proof on Base](#proof-on-base-mainnet) below. Those hashes are public BaseScan links.
 
@@ -51,9 +51,9 @@ Proof already on Base is in [Proof on Base](#proof-on-base-mainnet) below. Those
 
 ## Chat chips (demo order)
 
-| Chip | What it does | On Vercel without founder access |
+| Chip | What it does | On Vercel without the Write key |
 | --- | --- | --- |
-| Deposit 20 USDC | Unsigned ERC-20 to the treasury. Founder signs. Agent does not broadcast. | Plan + Sign deposit only if you are the founder |
+| Deposit 20 USDC | Unsigned ERC-20 to the treasury. Founder signs in MetaMask. Agent does not broadcast. | Plan + Sign deposit only if you are the founder |
 | Send $10 | Pay 10 USDC to Wallet 1 (at the per-call cap) | Plan. Confirm is blocked |
 | Send $50 | Pay 50 USDC to Wallet 2 | **Rejected.** Per-call cap is 10 USDC |
 | Buy the dip $1 | Flash **limit** buy of cbBTC, 0.001% below Chainlink spot, spend `min(free USDC, 1)` | Plan. Confirm is blocked |
@@ -88,9 +88,10 @@ docs/                 fetched vendor docs (not live product truth)
 
 **Hosted writes**
 
-- Confirm needs header `x-treasureflow-key` (dApp **Write key** field, in-memory only) plus founder `personal_sign` of `GET /auth/challenge`.
+- Confirm (pay, sweep, LP stocks, dip / market Flash) needs header `x-treasureflow-key` from the dApp **Write key** field (in-memory only). The connected External Wallet is not asked to `personal_sign` for those writes.
 - That secret is `CHAT_KEY` on the server. Do not put it in `VITE_*`. Never commit it.
-- Pause / Resume uses the same write key.
+- **Sign deposit** is the only chip that opens MetaMask: unsigned ERC-20, gated on `GET /auth/founder-ok` for `FOUNDER_ADDRESS`.
+- Pause / Resume uses the same Write key.
 
 **Reads (keys stay on the server)**
 
@@ -121,7 +122,7 @@ Hosted spend log and pause file live under `/tmp` (ephemeral across serverless i
 
 ## Proof on Base (mainnet)
 
-Every hash is a BaseScan link. **Flash fills are unverified.** Chat Confirm for dip / market Flash / B46 increase has not been broadcast from this repo (plans exist; founder Confirm is how live writes happen).
+Every hash is a BaseScan link. **Flash fills are unverified.** Chat Confirm (Write key) for dip / market Flash / Slipstream increase has not been broadcast from this repo (plans exist; Write key Confirm is how live writes happen).
 
 | What | Proof |
 | --- | --- |

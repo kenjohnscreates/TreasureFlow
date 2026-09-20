@@ -1,7 +1,14 @@
 import { formatUnits, type Address } from "viem";
-import { publicRpc, readSammLpValueUsdc, PUBLIC_RPCS, type SammLpPosition } from "../aerodrome/quote.ts";
+import {
+  publicRpc,
+  readSammLpValueUsdc,
+  PUBLIC_RPCS,
+  withPublicRpcs,
+  type SammLpPosition,
+} from "../aerodrome/quote.ts";
 import {
   readNvdaSlipstreamLps,
+  slipstreamLpsForChatPlan,
   type SlipstreamLp,
 } from "../aerodrome/slipstream.ts";
 import { getWalletPortfolio } from "../bankr/client.ts";
@@ -381,7 +388,9 @@ export async function chatLiveOpts(config: AppConfig, prompt: string): Promise<C
     const owner = snap.evmAddress ?? config.treasuryAddress;
     if (needsLp && owner) {
       try {
-        const lp = await readSammLpValueUsdc(owner, publicRpc(config.baseRpcUrl));
+        const lp = await withPublicRpcs(config.baseRpcUrl, (url) =>
+          readSammLpValueUsdc(owner, url),
+        );
         lpValueUsdc = lp.amountUsdc;
         log("samm_lp_quote", {
           lpValueUsdc: formatUnits(lp.amountUsdc, USDC_DECIMALS),
@@ -399,11 +408,17 @@ export async function chatLiveOpts(config: AppConfig, prompt: string): Promise<C
   if (intent.kind === "lp_stocks") {
     const owner = snap?.evmAddress ?? config.treasuryAddress;
     if (owner && config.baseRpcUrl) {
-      try {
-        opts.slipstream = await readNvdaSlipstreamLps(owner, config.baseRpcUrl);
-      } catch {
-        /* plan as mint if discovery fails */
-      }
+      const treasuryDisplay =
+        snap?.evmAddress
+          ? truncateAddress(snap.evmAddress)
+          : config.treasuryAddress
+            ? truncateAddress(config.treasuryAddress)
+            : undefined;
+      opts.slipstream = await slipstreamLpsForChatPlan(
+        owner,
+        config.baseRpcUrl,
+        treasuryDisplay,
+      );
     }
   }
 

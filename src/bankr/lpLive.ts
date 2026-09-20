@@ -1,10 +1,12 @@
 import { formatUnits, parseUnits, type Address } from "viem";
 import {
+  discoverIncreaseTokenIdResilient,
   pickIncreaseTokenId,
   readNvdaSlipstreamLps,
   type SlipstreamLp,
 } from "../aerodrome/slipstream.ts";
 import { BASE, USDC_DECIMALS, type AppConfig } from "../config/constants.ts";
+import { SLIPSTREAM_NVDA_NFT_ID } from "../demo/evidence.ts";
 import { AppError } from "../errors.ts";
 import { log } from "../log.ts";
 import { appendSpend, loadSpend } from "../policy/spendLog.ts";
@@ -63,13 +65,16 @@ async function discoverIncreaseId(
   deps: LpLiveDeps,
 ): Promise<string | undefined> {
   if (!rpcUrl) return undefined;
-  const readFn = deps.readNvdaSlipstreamLps ?? readNvdaSlipstreamLps;
-  try {
-    const rows: SlipstreamLp[] = await readFn(treasury, rpcUrl);
-    return pickIncreaseTokenId(rows);
-  } catch {
-    return undefined;
+  const readFn = deps.readNvdaSlipstreamLps;
+  if (readFn) {
+    try {
+      const rows: SlipstreamLp[] = await readFn(treasury, rpcUrl);
+      return pickIncreaseTokenId(rows);
+    } catch {
+      return SLIPSTREAM_NVDA_NFT_ID;
+    }
   }
+  return discoverIncreaseTokenIdResilient(treasury, rpcUrl, truncateAddress(treasury));
 }
 
 export async function executeLp(args: {

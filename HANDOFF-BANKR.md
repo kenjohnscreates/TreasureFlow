@@ -8,11 +8,13 @@ Workspace: `/Users/home/Code/TreasureFlow-bankr` on `backup/bankr-treasury`. Pro
 
 ## Current product
 
-Idle cash sits in a Bankr treasury. Founder deposits (unsigned ERC-20, founder signs). Agent never spends the founder wallet. After Confirm (write key + founder `personal_sign` of `/auth/challenge`) the agent can pay allowlisted wallets, unwind sAMM then pay, sweep extra cash into Aerodrome USDC/USDT LP, `increaseLiquidity` on Slipstream `#6356494` (mint only if no live NVDAc NFT), rest Flash cbBTC dip limits, and place a small market buy of cbBTC from free USDC.
+Idle cash sits in a Bankr treasury. Founder deposits (unsigned ERC-20, founder signs in MetaMask). Agent never spends the founder wallet. After Confirm (**Write key** only, header `x-treasureflow-key`) the agent can pay allowlisted wallets, unwind sAMM then pay, sweep extra cash into Aerodrome USDC/USDT LP, `increaseLiquidity` on Slipstream `#6356494` (mint only if no live NVDAc NFT), rest Flash cbBTC dip limits, and place a small market buy of cbBTC from free USDC. See [README.md](README.md) for judge copy.
+
+**B49:** `chatLiveOpts` / `executeLp` retry public Base RPCs for NVDAc Slipstream discovery; RPC total failure falls back to demo NFT `#6356494` so `lp stocks` plans increase, not mint, when `/treasury` already shows that NFT.
 
 Caps 15 / 10 / 30 / 15. RainbowKit Connect. Bankr LLM Gateway maps unknown NL (cannot set `sent: true`). Chat chips: Deposit 20 USDC, Send $10, Send $50, Buy the dip $1, LP stocks $10, Sweep extra cash, Buy $1 cbBTC now.
 
-Hosted writes are founder-only. Judges on Vercel get plans, live reads, and the Send $50 cap reject. Message Kenny ([@kenjohnscreates](https://github.com/kenjohnscreates)) for access. Never hand out `CHAT_KEY`, `BANKR_API_KEY`, or `FOUNDER_ADDRESS`.
+Hosted Confirm is blocked without the Write key. Judges on Vercel get plans, live reads, and the Send $50 cap reject. Message Kenny ([@kenjohnscreates](https://github.com/kenjohnscreates)) for access. Never hand out `CHAT_KEY`, `BANKR_API_KEY`, or `FOUNDER_ADDRESS`.
 
 Onchain proof (full hashes + BaseScan links): README.
 

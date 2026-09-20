@@ -446,3 +446,9 @@ Running build notes. One entry per task.
 ## Chip submit fail-closed
 
 - All Confirm writes (pay / sweep / LP / Flash) catch unexpected throws as `Rejected. Submit failed` instead of HTTP 500. Chainlink + Flash kernel reads retry public RPCs. LP plan survives a Gecko miss on increase. Deposit is the only chip that opens the connected wallet. Caps 15 / 10 / 30 / 15.
+
+## B49 lp stocks discovery matches /treasury
+
+- Live bug: plan-only `lp stocks` showed mint copy while GET `/treasury` had Slipstream `#6356494` staked ~$10.03. `chatLiveOpts` called `readNvdaSlipstreamLps` once on `BASE_RPC_URL` and swallowed errors, so `opts.slipstream` was empty. `discoverIncreaseId` in `lpLive.ts` had the same single-RPC swallow.
+- Fix: `slipstreamLpsForChatPlan` and `discoverIncreaseTokenIdResilient` use `withPublicRpcs` (same as sAMM quotes). If all RPCs throw, fall back to demo `SLIPSTREAM_NVDA_NFT_ID` `#6356494` so the chip plans increase, not mint. Empty successful read still mints. `chatLiveOpts` sAMM snapshot quote also uses `withPublicRpcs`. Confirm stays Write key only. Caps 15 / 10 / 30 / 15.
+- Tests 217 (`test/b49.test.ts`). `pnpm test` + `pnpm typecheck` + `pnpm --dir web exec tsc --noEmit`. README / HANDOFF-BANKR Confirm auth updated. No commit. No `--live`. No hosted POST `/chat` Confirm. Treasury `0x4c9D...a6c2`. No secrets.

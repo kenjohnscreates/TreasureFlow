@@ -16,7 +16,8 @@ import {
   SLIPSTREAM_NPM_ABI,
   SLIPSTREAM_POOL_ABI,
 } from "./abi.ts";
-import { publicRpc } from "./quote.ts";
+import { log } from "../log.ts";
+import { publicRpc, withPublicRpcs } from "./quote.ts";
 
 export type SlipstreamLp = {
   tokenId: string;
@@ -184,4 +185,73 @@ export function pickIncreaseTokenId(rows: SlipstreamLp[]): string | undefined {
   const preferred = rows.find((row) => row.tokenId === SLIPSTREAM_NVDA_NFT_ID);
   if (preferred) return preferred.tokenId;
   return rows[0]?.tokenId;
+}
+
+export async function readNvdaSlipstreamLpsWithRetry(
+  owner: Address,
+  rpcUrl: string,
+): Promise<SlipstreamLp[]> {
+  return withPublicRpcs(rpcUrl, (url) => readNvdaSlipstreamLps(owner, url));
+}
+
+function slipstreamReadErrorCode(err: unknown): string {
+  return err instanceof AppError ? err.code : "slipstream_quote";
+}
+
+/** Chat plan: retry public RPCs; on total failure assume demo NFT #6356494 (increase, not mint). */
+export async function slipstreamLpsForChatPlan(
+  owner: Address,
+  rpcUrl: string,
+  treasuryDisplay?: string,
+): Promise<SlipstreamLp[]> {
+  try {
+    const slipstream = await readNvdaSlipstreamLpsWithRetry(owner, rpcUrl);
+    if (slipstream.length === 0) {
+      log("slipstream_lp_read", {
+        live: true,
+        count: 0,
+        ...(treasuryDisplay ? { treasury: treasuryDisplay } : {}),
+      });
+      return slipstream;
+    }
+    log("slipstream_lp_read", {
+      live: true,
+      ...(treasuryDisplay ? { treasury: treasuryDisplay } : {}),
+      count: slipstream.length,
+      tokenId: slipstream[0]?.tokenId ?? "",
+      staked: slipstream[0]?.staked === true,
+      ...(slipstream[0]?.usd !== undefined ? { usd: slipstream[0].usd } : {}),
+    });
+    return slipstream;
+  } catch (err) {
+    log("slipstream_lp_read", {
+      live: false,
+      code: slipstreamReadErrorCode(err),
+      fallback: true,
+      tokenId: SLIPSTREAM_NVDA_NFT_ID,
+      ...(treasuryDisplay ? { treasury: treasuryDisplay } : {}),
+    });
+    return [{ tokenId: SLIPSTREAM_NVDA_NFT_ID, staked: true }];
+  }
+}
+
+/** Live LP submit: retry public RPCs; on total failure use demo NFT id; empty success still mints. */
+export async function discoverIncreaseTokenIdResilient(
+  owner: Address,
+  rpcUrl: string,
+  treasuryDisplay?: string,
+): Promise<string | undefined> {
+  try {
+    const rows = await readNvdaSlipstreamLpsWithRetry(owner, rpcUrl);
+    return pickIncreaseTokenId(rows);
+  } catch (err) {
+    log("slipstream_lp_read", {
+      live: false,
+      code: slipstreamReadErrorCode(err),
+      fallback: true,
+      tokenId: SLIPSTREAM_NVDA_NFT_ID,
+      ...(treasuryDisplay ? { treasury: treasuryDisplay } : {}),
+    });
+    return SLIPSTREAM_NVDA_NFT_ID;
+  }
 }
