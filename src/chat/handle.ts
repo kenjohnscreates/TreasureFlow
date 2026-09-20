@@ -248,6 +248,8 @@ export function rejectChat(kind: Intent["kind"], code: string): ChatReply {
                           ? "Rejected. FLASH_API_KEY is required."
                           : code === "quote_stale" || code === "nvda_quote"
                             ? "Rejected. NVDA quote unavailable. Try again."
+                            : code === "aerodrome_quote"
+                              ? "Rejected. Could not quote the USDC/USDT pool. Try again."
                             : `Rejected. ${code}`;
   return {
     kind,

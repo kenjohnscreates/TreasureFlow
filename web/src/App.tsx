@@ -16,7 +16,6 @@ import {
   type TreasuryStatus,
   type UnsignedTx,
   emptyTreasury,
-  fetchChallenge,
   fetchFlashOrders,
   fetchFounderOk,
   fetchStatus,
@@ -701,23 +700,15 @@ function ConfirmModal({
   onCancel: () => void;
   onReply: (summary: string, sent: boolean) => void;
 }) {
-  const { address } = useAccount();
-  const { data: walletClient } = useWalletClient();
   async function confirm() {
     setBusy(true);
     setErr("");
     try {
-      if (!address || !walletClient) {
-        setErr("Connect the founder wallet.");
+      if (!chatKey) {
+        setErr("Paste the Write key in the header.");
         return;
       }
-      const challenge = await fetchChallenge();
-      const sig = await walletClient.signMessage({ message: challenge.message });
-      const reply = await postChat(pending.prompt, {
-        chatKey: chatKey || undefined,
-        nonce: challenge.nonce,
-        sig,
-      });
+      const reply = await postChat(pending.prompt, { chatKey });
       onReply(reply.summary, reply.plan.sent === true);
       if (reply.plan.sent !== true) setErr(reply.summary);
     } catch (e: unknown) {
@@ -729,7 +720,7 @@ function ConfirmModal({
   const caps = `${policy?.bufferUsdc ?? "15"} / ${policy?.perCallCapUsdc ?? "10"} / ${policy?.dailyCapUsdc ?? "30"}`;
   const copy =
     pending.kind === "sweep"
-      ? `Sweep extra cash into USDC/USDT. Caps ${caps}.`
+      ? `Sweep extra cash into USDC/USDT from the company treasury. Caps ${caps}.`
       : pending.kind === "lp_stocks"
         ? pending.dest
           ? `Add $${pending.amount || "10"} to Slipstream NFT #${pending.dest}. Caps ${caps}.`

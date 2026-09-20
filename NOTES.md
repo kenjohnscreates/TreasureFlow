@@ -438,3 +438,7 @@ Running build notes. One entry per task.
 ## B47 LP add after cash close
 
 - `lp stocks` Confirm was dying on Yahoo `quote_stale` (900s) while NVDA is closed. Falls back to Coinbase Chainlink NVDA (48h). Increase quote-fresh is 48h so Saturday add to `#6356494` can submit. Caps 15 / 10 / 30 / 15.
+
+## B48 sweep quote retry; Confirm is write-key only
+
+- Sweep Confirm 500'd after a sized $5 add: sAMM `quoteAddLiquidity` threw a raw RPC error. Retries public Base RPCs and maps failures to `aerodrome_quote`. Confirm for sweep/LP/pay/Flash uses the Write key only; connected External Wallet is not asked to sign. Deposit still signs from the founder wallet. Caps 15 / 10 / 30 / 15.

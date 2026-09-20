@@ -87,7 +87,7 @@ describe("B33 submit gate", () => {
     }
   });
 
-  it("confirm without founder sig is 401 when FOUNDER_ADDRESS is set", async () => {
+  it("confirm with write key does not need a founder wallet signature", async () => {
     process.env.CHAT_KEY = "unit-test-key";
     process.env.FOUNDER_ADDRESS = founder.address;
     process.env.PAUSED = "false";
@@ -99,7 +99,9 @@ describe("B33 submit gate", () => {
       },
       body: JSON.stringify({ prompt: "sweep" }),
     });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { plan: { sent?: boolean } };
+    expect(body.plan.sent).not.toBe(true);
   });
 
   it("Vercel missing CHAT_KEY with a submit header is 401", () => {
@@ -109,7 +111,7 @@ describe("B33 submit gate", () => {
     expect(chatKeyGate(sweep, undefined, "", env)).toEqual({ ok: true, submit: false });
   });
 
-  it("Vercel missing FOUNDER_ADDRESS is 401 on confirm", async () => {
+  it("Vercel missing FOUNDER_ADDRESS still confirms with the write key", async () => {
     process.env.VERCEL = "1";
     process.env.CHAT_KEY = "unit-test-key";
     process.env.FOUNDER_ADDRESS = "";
@@ -122,7 +124,7 @@ describe("B33 submit gate", () => {
       },
       body: JSON.stringify({ prompt: "sweep" }),
     });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(200);
   });
 
   it("confirm with key + founder sig of challenge is allowed", async () => {
@@ -145,6 +147,13 @@ describe("B33 submit gate", () => {
     const body = (await res.json()) as { plan: { sent?: boolean; action?: string } };
     expect(body.plan.sent).not.toBe(true);
     expect(body.plan.action).toBe("noop");
+  });
+
+  it("Confirm does not ask the connected wallet to sign treasury writes", () => {
+    const appSrc = readFileSync(join(root, "web/src/App.tsx"), "utf8");
+    expect(appSrc).toContain("Paste the Write key in the header.");
+    expect(appSrc).not.toContain("signMessage");
+    expect(appSrc).not.toContain("fetchChallenge");
   });
 });
 

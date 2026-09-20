@@ -5,8 +5,9 @@ import {
   encodeRemoveLiquidity,
   encodeTransfer,
 } from "../src/aerodrome/encode.ts";
-import { sizeLpBurn } from "../src/aerodrome/quote.ts";
+import { sizeLpBurn, withPublicRpcs } from "../src/aerodrome/quote.ts";
 import { BASE } from "../src/config/constants.ts";
+import { AppError } from "../src/errors.ts";
 import { usdc } from "../src/config/constants.ts";
 
 const to = getAddress("0x000000000000000000000000000000000000dEaD");
@@ -66,5 +67,18 @@ describe("sAMM remove quote sizing", () => {
         fullAmountUsdc: usdc(1),
       }),
     ).toBe(0n);
+  });
+
+  it("maps exhausted RPC failures to aerodrome_quote", async () => {
+    await expect(
+      withPublicRpcs("https://example.invalid", async () => {
+        throw new Error("RPC Request failed");
+      }),
+    ).rejects.toMatchObject({ code: "aerodrome_quote" });
+    await expect(
+      withPublicRpcs("https://example.invalid", async () => {
+        throw new AppError("hard_stop", "quoted USDC exceeds hard stop");
+      }),
+    ).rejects.toMatchObject({ code: "hard_stop" });
   });
 });

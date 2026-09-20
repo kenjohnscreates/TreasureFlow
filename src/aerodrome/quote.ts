@@ -36,50 +36,77 @@ function rpcClient(rpcUrl = FALLBACK_RPC) {
   });
 }
 
+export async function withPublicRpcs<T>(
+  rpcUrl: string,
+  fn: (url: string) => Promise<T>,
+): Promise<T> {
+  const preferred = publicRpc(rpcUrl);
+  const urls = [preferred, ...PUBLIC_RPCS.filter((url) => url !== preferred)];
+  let last: unknown;
+  for (const url of urls) {
+    try {
+      return await fn(url);
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      last = err;
+    }
+  }
+  throw new AppError(
+    "aerodrome_quote",
+    last instanceof Error ? last.message : "all RPCs failed",
+  );
+}
+
 export async function quoteAddLiquidity(
   amountUsdc: bigint,
   amountUsdt: bigint,
   rpcUrl = FALLBACK_RPC,
 ): Promise<AddQuote> {
-  const client = rpcClient(rpcUrl);
-  const quoted = await client.readContract({
-    address: BASE.aerodromeRouter,
-    abi: ROUTER_ABI,
-    functionName: "quoteAddLiquidity",
-    args: [BASE.usdc, BASE.usdt, true, BASE.aerodromePoolFactory, amountUsdc, amountUsdt],
+  return withPublicRpcs(rpcUrl, async (url) => {
+    const client = rpcClient(url);
+    const quoted = await client.readContract({
+      address: BASE.aerodromeRouter,
+      abi: ROUTER_ABI,
+      functionName: "quoteAddLiquidity",
+      args: [BASE.usdc, BASE.usdt, true, BASE.aerodromePoolFactory, amountUsdc, amountUsdt],
+    });
+    const [amountA, amountB, liquidity] = quoted;
+    if (liquidity === 0n || amountA === 0n || amountB === 0n) {
+      throw new AppError("aerodrome_quote", "sAMM quote returned zero liquidity");
+    }
+    return { amountUsdc: amountA, amountUsdt: amountB, liquidity };
   });
-  const [amountA, amountB, liquidity] = quoted;
-  if (liquidity === 0n || amountA === 0n || amountB === 0n) {
-    throw new AppError("aerodrome_quote", "sAMM quote returned zero liquidity");
-  }
-  return { amountUsdc: amountA, amountUsdt: amountB, liquidity };
 }
 
 export async function quoteRemoveLiquidity(
   liquidity: bigint,
   rpcUrl = FALLBACK_RPC,
 ): Promise<RemoveQuote> {
-  const client = rpcClient(rpcUrl);
-  const quoted = await client.readContract({
-    address: BASE.aerodromeRouter,
-    abi: ROUTER_ABI,
-    functionName: "quoteRemoveLiquidity",
-    args: [BASE.usdc, BASE.usdt, true, BASE.aerodromePoolFactory, liquidity],
+  return withPublicRpcs(rpcUrl, async (url) => {
+    const client = rpcClient(url);
+    const quoted = await client.readContract({
+      address: BASE.aerodromeRouter,
+      abi: ROUTER_ABI,
+      functionName: "quoteRemoveLiquidity",
+      args: [BASE.usdc, BASE.usdt, true, BASE.aerodromePoolFactory, liquidity],
+    });
+    const [amountA, amountB] = quoted;
+    return { amountUsdc: amountA, amountUsdt: amountB };
   });
-  const [amountA, amountB] = quoted;
-  return { amountUsdc: amountA, amountUsdt: amountB };
 }
 
 export async function sammLpBalance(
   owner: Address,
   rpcUrl = FALLBACK_RPC,
 ): Promise<bigint> {
-  const client = rpcClient(rpcUrl);
-  return client.readContract({
-    address: BASE.usdcUsdtSamm,
-    abi: ERC20_ABI,
-    functionName: "balanceOf",
-    args: [owner],
+  return withPublicRpcs(rpcUrl, async (url) => {
+    const client = rpcClient(url);
+    return client.readContract({
+      address: BASE.usdcUsdtSamm,
+      abi: ERC20_ABI,
+      functionName: "balanceOf",
+      args: [owner],
+    });
   });
 }
 

@@ -6,7 +6,7 @@ import { loadConfig, type AppConfig } from "../config/load.ts";
 import { AppError } from "../errors.ts";
 import { log } from "../log.ts";
 import { CHAT_KEY_HEADER, CHAT_NONCE_HEADER, CHAT_SIG_HEADER } from "./agentUrl.ts";
-import { assertFounderSubmit, founderOk, issueChallenge } from "./founderAuth.ts";
+import { founderOk, issueChallenge } from "./founderAuth.ts";
 import { handleChat, type ChatOpts, type ChatReply } from "./handle.ts";
 import { chatKeyGate, corsOriginHeader, requireWriteKey } from "./hosting.ts";
 import { parseIntent } from "./intent.ts";
@@ -132,14 +132,6 @@ app.post("/chat", async (c) => {
     return c.json({ error: gate.error, message: gate.message }, gate.status);
   }
   if (!gate.submit) return c.json(reply);
-  const founder = await assertFounderSubmit({
-    founderAddress: config.founderAddress,
-    nonceHeader: c.req.header(CHAT_NONCE_HEADER),
-    sigHeader: c.req.header(CHAT_SIG_HEADER),
-  });
-  if (!founder.ok) {
-    return c.json({ error: founder.error, message: founder.message }, founder.status);
-  }
   return c.json(await maybeSubmitChat(turn.prompt, reply, config, turn.liveOpts));
 });
 
