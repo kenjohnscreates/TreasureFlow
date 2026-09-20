@@ -450,8 +450,10 @@ td {
 
 .chat {
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .chat-head {
@@ -497,22 +499,32 @@ td {
 .chip-block {
   flex: 0 0 auto;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin-top: 8px;
   padding: 0;
   border: none;
   background: transparent;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  align-content: flex-start;
   gap: 6px;
-  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
 .chips button {
+  flex: 0 1 auto;
+  max-width: 100%;
   background: #10141a;
   color: var(--muted);
   border: 1px solid var(--line);
