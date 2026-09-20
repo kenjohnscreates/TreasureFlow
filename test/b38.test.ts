@@ -245,7 +245,7 @@ describe("B38 market quote + B5 + caps", () => {
     const appSrc = readFileSync(join(root, "web/src/App.tsx"), "utf8");
     expect(appSrc).toContain("Limit $/cbBTC");
     expect(appSrc).toContain("USDC spend");
-    expect(appSrc).toContain("Buy cbBTC now");
+    expect(appSrc).toContain("Buy $1 cbBTC now");
     expect(appSrc).toContain('prompt: "buy cbBTC"');
     expect(appSrc).toContain("B5 rungs fill only if spot drops to that limit");
     expect(appSrc).not.toMatch(/\u2014|\u2013/);

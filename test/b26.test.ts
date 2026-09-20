@@ -279,14 +279,31 @@ describe("B26 dApp source guards", () => {
     expect(appSrc).not.toMatch(/>\s*Lend\s*</);
     expect(appSrc).toContain("send $10 USDC to wallet 1");
     expect(appSrc).toContain("send $50 USDC to wallet 2");
-    expect(appSrc).toContain("Send 10");
-    expect(appSrc).toContain("Send 50");
+    expect(appSrc).toContain("Send $10");
+    expect(appSrc).toContain("Send $50");
     expect(appSrc).toContain("Sweep extra cash");
     expect(appSrc).not.toContain("Sweep extra cash (plan only)");
-    expect(appSrc).toContain("LP stocks");
+    expect(appSrc).toContain("LP stocks $10");
     expect(appSrc).not.toContain("LP stocks (plan only)");
     expect(appSrc).toContain("buy cbBTC");
-    expect(appSrc).toContain("Buy cbBTC now");
+    expect(appSrc).toContain("Buy $1 cbBTC now");
+    expect(appSrc).toContain("Buy the dip $1");
+    expect(appSrc.indexOf('label: "Deposit 20 USDC"')).toBeLessThan(
+      appSrc.indexOf('label: "Send $10"'),
+    );
+    expect(appSrc.indexOf('label: "Send $10"')).toBeLessThan(appSrc.indexOf('label: "Send $50"'));
+    expect(appSrc.indexOf('label: "Send $50"')).toBeLessThan(
+      appSrc.indexOf('label: "Buy the dip $1"'),
+    );
+    expect(appSrc.indexOf('label: "Buy the dip $1"')).toBeLessThan(
+      appSrc.indexOf('label: "LP stocks $10"'),
+    );
+    expect(appSrc.indexOf('label: "LP stocks $10"')).toBeLessThan(
+      appSrc.indexOf('label: "Sweep extra cash"'),
+    );
+    expect(appSrc.indexOf('label: "Sweep extra cash"')).toBeLessThan(
+      appSrc.indexOf('label: "Buy $1 cbBTC now"'),
+    );
     expect(landing).toContain("not the connected wallet");
     expect(landing).toContain("founder signs deposits");
     expect(landing).toContain("Pause stops outbound");

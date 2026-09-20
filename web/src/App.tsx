@@ -536,15 +536,12 @@ function ChatPanel({
 }) {
   const chips = [
     { label: "Deposit 20 USDC", prompt: "deposit 20 USDC" },
+    { label: "Send $10", prompt: SEND_CHIP },
+    { label: "Send $50", prompt: SEND_REJECT_CHIP },
+    { label: "Buy the dip $1", prompt: "buy the dip" },
+    { label: "LP stocks $10", prompt: "lp stocks" },
     { label: "Sweep extra cash", prompt: "sweep" },
-    { label: "LP stocks", prompt: "lp stocks" },
-    {
-      label: "Buy cbBTC now",
-      prompt: "buy cbBTC",
-    },
-    { label: "Buy the dip", prompt: "buy the dip" },
-    { label: "Send 10", prompt: SEND_CHIP },
-    { label: "Send 50", prompt: SEND_REJECT_CHIP },
+    { label: "Buy $1 cbBTC now", prompt: "buy cbBTC" },
   ];
   const [prompt, setPrompt] = useState("");
   const [lines, setLines] = useState<LogLine[]>([

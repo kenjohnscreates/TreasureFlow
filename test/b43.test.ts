@@ -170,10 +170,10 @@ describe("B43 buy-the-dip Flash limit from chat", () => {
 
   it("chip, LLM, and B5 ids stay", () => {
     const app = readFileSync(join(root, "web/src/App.tsx"), "utf8");
-    expect(app).toContain("Buy the dip");
+    expect(app).toContain("Buy the dip $1");
     expect(app).toContain('prompt: "buy the dip"');
     expect(app).toContain("0.001% below spot");
-    expect(app).toContain("Buy cbBTC now");
+    expect(app).toContain("Buy $1 cbBTC now");
     expect(llmSystemPrompt()).toContain("buy the dip");
     expect(B5_IDS).toEqual([
       "7863b457-c132-4f6d-bc01-0925dd32d6ee",

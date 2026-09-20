@@ -58,8 +58,8 @@ describe("B42 wallet 1 / wallet 2 pay aliases", () => {
     expect(app).not.toContain("founderDisplay");
     expect(app).toContain("send $10 USDC to wallet 1");
     expect(app).toContain("send $50 USDC to wallet 2");
-    expect(app).toContain("Send 10");
-    expect(app).toContain("Send 50");
+    expect(app).toContain("Send $10");
+    expect(app).toContain("Send $50");
     expect(app).not.toContain("Send 8");
     expect(llmSystemPrompt()).toContain("send $10 USDC to wallet 1");
     expect(llmSystemPrompt()).toContain("send $50 USDC to wallet 2");
