@@ -1,6 +1,6 @@
 import { type Address, createPublicClient, http } from "viem";
 import { base } from "viem/chains";
-import { publicRpc } from "../aerodrome/quote.ts";
+import { publicRpc, withPublicRpcs } from "../aerodrome/quote.ts";
 import { AppError } from "../errors.ts";
 import { btcSpotFromAnswer } from "../flash/ladder.ts";
 
@@ -50,11 +50,11 @@ export const ETH_SPOT_MAX = 100_000;
 export const NVDA_SPOT_MIN = 1;
 export const NVDA_SPOT_MAX = 10_000;
 
-async function readLatestSpot(
+async function readLatestSpotOnce(
   feed: Address,
   rpcUrl: string,
-  maxAgeS = ORACLE_MAX_AGE_S,
-  nowMs = Date.now(),
+  maxAgeS: number,
+  nowMs: number,
 ): Promise<{ spot: number; ageS: number }> {
   const client = createPublicClient({
     chain: base,
@@ -76,6 +76,24 @@ async function readLatestSpot(
   if (ageS > maxAgeS)
     throw new AppError("oracle_stale", "Chainlink answer is stale");
   return { spot: btcSpotFromAnswer(answer, decimals), ageS };
+}
+
+async function readLatestSpot(
+  feed: Address,
+  rpcUrl: string,
+  maxAgeS = ORACLE_MAX_AGE_S,
+  nowMs = Date.now(),
+): Promise<{ spot: number; ageS: number }> {
+  try {
+    return await withPublicRpcs(rpcUrl, (url) =>
+      readLatestSpotOnce(feed, url, maxAgeS, nowMs),
+    );
+  } catch (err) {
+    if (err instanceof AppError && err.code === "aerodrome_quote") {
+      throw new AppError("oracle_http", err.message);
+    }
+    throw err;
+  }
 }
 
 export async function readSpotUsd(feed: Address, rpcUrl = ""): Promise<number> {

@@ -250,6 +250,12 @@ export function rejectChat(kind: Intent["kind"], code: string): ChatReply {
                             ? "Rejected. NVDA quote unavailable. Try again."
                             : code === "aerodrome_quote"
                               ? "Rejected. Could not quote the USDC/USDT pool. Try again."
+                            : code === "oracle_http" || code === "oracle_stale"
+                              ? "Rejected. Price feed unavailable. Try again."
+                            : code === "skill_gate"
+                              ? "Rejected. LP pool checks failed. Try again."
+                            : code === "internal"
+                              ? "Rejected. Submit failed. Try again."
                             : `Rejected. ${code}`;
   return {
     kind,

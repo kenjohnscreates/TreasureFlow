@@ -442,3 +442,7 @@ Running build notes. One entry per task.
 ## B48 sweep quote retry; Confirm is write-key only
 
 - Sweep Confirm 500'd after a sized $5 add: sAMM `quoteAddLiquidity` threw a raw RPC error. Retries public Base RPCs and maps failures to `aerodrome_quote`. Confirm for sweep/LP/pay/Flash uses the Write key only; connected External Wallet is not asked to sign. Deposit still signs from the founder wallet. Caps 15 / 10 / 30 / 15.
+
+## Chip submit fail-closed
+
+- All Confirm writes (pay / sweep / LP / Flash) catch unexpected throws as `Rejected. Submit failed` instead of HTTP 500. Chainlink + Flash kernel reads retry public RPCs. LP plan survives a Gecko miss on increase. Deposit is the only chip that opens the connected wallet. Caps 15 / 10 / 30 / 15.

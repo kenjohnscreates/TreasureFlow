@@ -6,6 +6,7 @@ import { executeDemoFlash, type DemoFlashDeps } from "../flash/demoOrder.ts";
 import { truncateAddress } from "../bankr/parse.ts";
 import { assertNotPaused } from "../policy/math.ts";
 import { assertSpendWritable } from "../policy/spendLog.ts";
+import { log } from "../log.ts";
 import { rejectChat, type ChatOpts, type ChatReply } from "./handle.ts";
 import { maybeSubmitChatPay, type SubmitPayDeps } from "./submitPay.ts";
 
@@ -239,10 +240,16 @@ export async function maybeSubmitChat(
   opts: ChatOpts = {},
   deps: SubmitWriteDeps = {},
 ): Promise<ChatReply> {
-  if (reply.kind === "pay") return maybeSubmitChatPay(prompt, reply, config, deps);
-  if (reply.kind === "sweep") return maybeSubmitChatSweep(reply, config, opts, deps);
-  if (reply.kind === "lp_stocks") return maybeSubmitChatLp(reply, config, opts, deps);
-  if (reply.kind === "demo_flash") return maybeSubmitChatFlash(reply, config, opts, deps);
-  if (reply.kind === "dip_flash") return maybeSubmitChatFlash(reply, config, opts, deps);
-  return reply;
+  try {
+    if (reply.kind === "pay") return await maybeSubmitChatPay(prompt, reply, config, deps);
+    if (reply.kind === "sweep") return await maybeSubmitChatSweep(reply, config, opts, deps);
+    if (reply.kind === "lp_stocks") return await maybeSubmitChatLp(reply, config, opts, deps);
+    if (reply.kind === "demo_flash") return await maybeSubmitChatFlash(reply, config, opts, deps);
+    if (reply.kind === "dip_flash") return await maybeSubmitChatFlash(reply, config, opts, deps);
+    return reply;
+  } catch (err) {
+    if (err instanceof AppError) return rejectChat(reply.kind, err.code);
+    log("chat_submit", { kind: reply.kind, code: "internal" });
+    return rejectChat(reply.kind, "internal");
+  }
 }

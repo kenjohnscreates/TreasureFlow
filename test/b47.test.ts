@@ -55,6 +55,7 @@ describe("B47 weekend NVDA quote for LP increase", () => {
   it("lets increase reuse last close up to the 48h Coinbase heartbeat", () => {
     const entry = readFileSync(join(root, "vendor/aero-stock-lp/scripts/entry.mjs"), "utf8");
     expect(entry).toContain("existingBand ? 48 * 60 * 60 : 900");
+    expect(entry).toContain("geckoPool(M.pool).catch(() => null)");
     expect(NVDA_ORACLE_MAX_AGE_S).toBe(48 * 60 * 60);
   });
 });

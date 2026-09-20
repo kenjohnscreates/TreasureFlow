@@ -1,6 +1,7 @@
 import { type Address, type Hex, concat, createPublicClient, http } from "viem";
 import { base } from "viem/chains";
-import { publicRpc } from "../aerodrome/quote.ts";
+import { withPublicRpcs } from "../aerodrome/quote.ts";
+import { AppError } from "../errors.ts";
 
 const EIP712_DOMAIN_ABI = [
   {
@@ -56,30 +57,44 @@ export async function readAccountCode(
   address: Address,
   rpcUrl = "",
 ): Promise<Hex | undefined> {
-  const client = createPublicClient({
-    chain: base,
-    transport: http(publicRpc(rpcUrl)),
+  return withPublicRpcs(rpcUrl, async (url) => {
+    const client = createPublicClient({
+      chain: base,
+      transport: http(url),
+    });
+    return client.getCode({ address });
+  }).catch((err: unknown) => {
+    if (err instanceof AppError && err.code === "aerodrome_quote") {
+      throw new AppError("oracle_http", err.message);
+    }
+    throw err;
   });
-  return client.getCode({ address });
 }
 
 export async function readKernelDomain(
   address: Address,
   rpcUrl = "",
 ): Promise<KernelDomain> {
-  const client = createPublicClient({
-    chain: base,
-    transport: http(publicRpc(rpcUrl)),
+  return withPublicRpcs(rpcUrl, async (url) => {
+    const client = createPublicClient({
+      chain: base,
+      transport: http(url),
+    });
+    const domain = await client.readContract({
+      address,
+      abi: EIP712_DOMAIN_ABI,
+      functionName: "eip712Domain",
+    });
+    return {
+      name: domain[1],
+      version: domain[2],
+      chainId: Number(domain[3]),
+      verifyingContract: domain[4],
+    };
+  }).catch((err: unknown) => {
+    if (err instanceof AppError && err.code === "aerodrome_quote") {
+      throw new AppError("oracle_http", err.message);
+    }
+    throw err;
   });
-  const domain = await client.readContract({
-    address,
-    abi: EIP712_DOMAIN_ABI,
-    functionName: "eip712Domain",
-  });
-  return {
-    name: domain[1],
-    version: domain[2],
-    chainId: Number(domain[3]),
-    verifyingContract: domain[4],
-  };
 }

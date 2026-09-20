@@ -140,9 +140,10 @@ async function plan() {
   }
 
   const [gecko, walletEth] = await Promise.all([
-    geckoPool(M.pool),
+    geckoPool(M.pool).catch(() => null),
     ethBalance(wallet).catch(() => null), // null = unknown; agent checks gas another way
   ]);
+  if (!gecko && !existingBand) fail("tvl", "gecko unavailable");
   const [slot0Res, usdcBalRes, usdcAllowRes, stockBalRes] = await multicall([
     { to: M.pool, data: SEL.slot0 },
     { to: USDC, data: SEL.balanceOf + addrWord(wallet) },
@@ -176,7 +177,7 @@ async function plan() {
     ? Number(toBigInt(wordAt(stockBalRes.data, 0))) / 10 ** M.decimals
     : 0;
   const looseStockUsd = looseStock * poolPrice;
-  const ageHours = gecko.createdAt
+  const ageHours = gecko?.createdAt
     ? (Date.now() - Date.parse(gecko.createdAt)) / 3.6e6
     : Infinity;
   // Increase reuses live ticks. Coinbase NVDA heartbeat is 24h and holds
@@ -196,15 +197,6 @@ async function plan() {
       value: +(poolPrice / quote).toFixed(3),
       limit: "pool/quote in (0.5, 2) — outside = fictitious price",
     },
-    { name: "tvl", pass: gecko.tvlUsd >= 20000, value: Math.round(gecko.tvlUsd), limit: ">=$20k" },
-    { name: "volume", pass: gecko.vol24hUsd > 0, value: Math.round(gecko.vol24hUsd), limit: ">0" },
-    { name: "pool-age", pass: ageHours >= 48, value: Math.round(ageHours), limit: ">=48h" },
-    {
-      name: "size-vs-tvl",
-      pass: usd <= 0.25 * gecko.tvlUsd,
-      value: +((100 * usd) / gecko.tvlUsd).toFixed(1),
-      limit: "<=25% of pool TVL",
-    },
     {
       // fail closed BEFORE any tx: an entry the wallet can't fund would
       // otherwise revert mid-sequence at the swap or mint
@@ -213,13 +205,26 @@ async function plan() {
       value: +(usdcBal + looseStockUsd).toFixed(2),
       limit: `wallet USDC + loose ${market} must cover $${usd}`,
     },
-    {
-      name: "vol-brake",
-      pass: Math.abs(gecko.change24hPct) < volBrake,
-      value: gecko.change24hPct,
-      limit: `|24h move| < ${volBrake}%`,
-    },
   ];
+  if (gecko) {
+    gates.push(
+      { name: "tvl", pass: gecko.tvlUsd >= 20000, value: Math.round(gecko.tvlUsd), limit: ">=$20k" },
+      { name: "volume", pass: gecko.vol24hUsd > 0, value: Math.round(gecko.vol24hUsd), limit: ">0" },
+      { name: "pool-age", pass: ageHours >= 48, value: Math.round(ageHours), limit: ">=48h" },
+      {
+        name: "size-vs-tvl",
+        pass: usd <= 0.25 * gecko.tvlUsd,
+        value: +((100 * usd) / gecko.tvlUsd).toFixed(1),
+        limit: "<=25% of pool TVL",
+      },
+      {
+        name: "vol-brake",
+        pass: Math.abs(gecko.change24hPct) < volBrake,
+        value: gecko.change24hPct,
+        limit: `|24h move| < ${volBrake}%`,
+      },
+    );
+  }
   if (!existingBand) {
     gates.push({ name: "vol-input", pass: w > 0, value: w ?? null, limit: "honest w required (no guess)" });
   }
@@ -459,7 +464,12 @@ async function settle() {
   const ratePerSec = rateRes.ok ? Number(toBigInt(wordAt(rateRes.data, 0))) / 1e18 : 0;
   const minStakeS = minStakeRes.ok ? Number(toBigInt(wordAt(minStakeRes.data, 0))) : 0;
 
-  const [gecko, spot] = await Promise.all([geckoPool(M.pool), aeroSpot()]);
+  const [gecko, spot] = existingId
+    ? [{ vol24hUsd: 0 }, 0]
+    : await Promise.all([
+        geckoPool(M.pool).catch(() => ({ vol24hUsd: 0 })),
+        aeroSpot().catch(() => 0),
+      ]);
   const feePotYr = gecko.vol24hUsd * M.fee * 365;
   const emisPotYr = ratePerSec * 31536000 * spot;
   const feePerL = poolL > 0n ? (feePotYr * (1 - skim)) / Number(poolL) : 0;

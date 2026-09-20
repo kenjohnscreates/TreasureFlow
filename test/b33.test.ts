@@ -154,6 +154,24 @@ describe("B33 submit gate", () => {
     expect(appSrc).toContain("Paste the Write key in the header.");
     expect(appSrc).not.toContain("signMessage");
     expect(appSrc).not.toContain("fetchChallenge");
+    expect(appSrc).toContain("Sign deposit");
+  });
+
+  it("maps unexpected submit throws to a chat reject instead of 500", async () => {
+    const out = await maybeSubmitChat(
+      "sweep",
+      { kind: "sweep", summary: "plan", plan: { action: "add_liquidity" } },
+      { ...loadConfig(), paused: false, treasuryAddress: dest, bankrApiKey: "test-key" },
+      { snapshot: { usdcFree: usdc(55), usdtFree: usdc(40), lpValueUsdc: 0n } },
+      {
+        quoteAddLiquidity: async () => {
+          throw new Error("rpc boom");
+        },
+        assertSpendWritable: async () => undefined,
+      },
+    );
+    expect(out.plan.action).toBe("rejected");
+    expect(out.plan.code).toBe("internal");
   });
 });
 
