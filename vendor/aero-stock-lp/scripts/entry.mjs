@@ -179,8 +179,11 @@ async function plan() {
   const ageHours = gecko.createdAt
     ? (Date.now() - Date.parse(gecko.createdAt)) / 3.6e6
     : Infinity;
+  // Increase reuses live ticks. Coinbase NVDA heartbeat is 24h and holds
+  // last close on weekends, so 15m Yahoo freshness would block Saturday adds.
+  const quoteMaxAgeS = existingBand ? 48 * 60 * 60 : 900;
   const gates = [
-    { name: "quote-fresh", pass: quoteAge <= 900, value: quoteAge, limit: "<=900s" },
+    { name: "quote-fresh", pass: quoteAge <= quoteMaxAgeS, value: quoteAge, limit: `<=${quoteMaxAgeS}s` },
     {
       name: "nav",
       pass: quote > 0 && Math.abs(poolPrice / quote - 1) <= 0.03,

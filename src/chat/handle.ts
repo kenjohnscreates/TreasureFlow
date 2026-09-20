@@ -246,7 +246,9 @@ export function rejectChat(kind: Intent["kind"], code: string): ChatReply {
                         ? "Rejected. BANKR_API_KEY is required."
                         : code === "missing_flash"
                           ? "Rejected. FLASH_API_KEY is required."
-                          : `Rejected. ${code}`;
+                          : code === "quote_stale" || code === "nvda_quote"
+                            ? "Rejected. NVDA quote unavailable. Try again."
+                            : `Rejected. ${code}`;
   return {
     kind,
     summary,

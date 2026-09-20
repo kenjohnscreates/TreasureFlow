@@ -4,13 +4,13 @@ import {
   readNvdaSlipstreamLps,
   type SlipstreamLp,
 } from "../aerodrome/slipstream.ts";
-import { USDC_DECIMALS, type AppConfig } from "../config/constants.ts";
+import { BASE, USDC_DECIMALS, type AppConfig } from "../config/constants.ts";
 import { AppError } from "../errors.ts";
 import { log } from "../log.ts";
 import { appendSpend, loadSpend } from "../policy/spendLog.ts";
 import { persistLp } from "./lpPersist.ts";
 import { assertNotStranded, truncateAddress } from "./parse.ts";
-import { fetchNvdaQuote, NVDA_IV } from "./quote.ts";
+import { fetchNvdaQuote, resolveNvdaQuote, NVDA_IV } from "./quote.ts";
 import { runEntry, SKILL_STATE, type SkillResult } from "./skill.ts";
 import {
   assertUnderHardStop,
@@ -89,9 +89,10 @@ export async function executeLp(args: {
   if (!treasury) throw new AppError("missing_treasury", "TREASURY_ADDRESS is required");
   assertNotStranded(treasury);
   const hardStop = Number(formatUnits(config.policy.hardStopUsdc, USDC_DECIMALS));
-  const quoteFn = deps.fetchNvdaQuote ?? fetchNvdaQuote;
   const entry = deps.runEntry ?? runEntry;
-  const quote = await quoteFn();
+  const quote = deps.fetchNvdaQuote
+    ? await deps.fetchNvdaQuote()
+    : await resolveNvdaQuote({ rpcUrl: config.baseRpcUrl, feed: BASE.nvdaUsdFeed });
   log("bankr_lp_quote", {
     price: quote.price,
     ageS: quote.ageS,

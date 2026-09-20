@@ -434,3 +434,7 @@ Running build notes. One entry per task.
 ## Chip plan copy is product language
 
 - Pay plan is `Send N USDC to 0x…. Confirm to submit.` not dry-run / Chat does not submit. Sweep / LP / dip / market / deposit match that. Typed `limits` points at Limits & Orders. Caps 15 / 10 / 30 / 15.
+
+## B47 LP add after cash close
+
+- `lp stocks` Confirm was dying on Yahoo `quote_stale` (900s) while NVDA is closed. Falls back to Coinbase Chainlink NVDA (48h). Increase quote-fresh is 48h so Saturday add to `#6356494` can submit. Caps 15 / 10 / 30 / 15.

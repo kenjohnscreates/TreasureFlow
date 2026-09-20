@@ -1,7 +1,10 @@
+import { type Address } from "viem";
 import { AppError } from "../errors.ts";
+import { readNvdaSpotQuote } from "../oracle/chainlink.ts";
 
 // OptiView 30d ATM as of 2026-09-16 15:55 ET. Script has no IV-age gate.
 export const NVDA_IV = 0.311;
+export const YAHOO_QUOTE_MAX_AGE_S = 900;
 
 export type NvdaQuote = {
   price: number;
@@ -12,6 +15,11 @@ export type NvdaQuote = {
 type QuoteRes = Awaited<ReturnType<typeof fetch>> & {
   ok: boolean;
   json: () => Promise<unknown>;
+};
+
+export type ResolveNvdaQuoteDeps = {
+  fetchYahoo?: typeof fetchNvdaQuote;
+  readChainlink?: typeof readNvdaSpotQuote;
 };
 
 export async function fetchNvdaQuote(nowMs = Date.now()): Promise<NvdaQuote> {
@@ -40,6 +48,28 @@ export async function fetchNvdaQuote(nowMs = Date.now()): Promise<NvdaQuote> {
     throw new AppError("nvda_quote", "NVDA quote missing price");
   }
   const ageS = Math.max(0, Math.floor(nowMs / 1000) - ts);
-  if (ageS > 900) throw new AppError("quote_stale", "NVDA quote older than 900s");
+  if (ageS > YAHOO_QUOTE_MAX_AGE_S) {
+    throw new AppError("quote_stale", "NVDA quote older than 900s");
+  }
   return { price, ageS, source: "yahoo" };
+}
+
+/** Yahoo while the cash session is open; Coinbase NVDA feed after close. */
+export async function resolveNvdaQuote(args: {
+  rpcUrl: string;
+  feed: Address;
+  nowMs?: number;
+  deps?: ResolveNvdaQuoteDeps;
+}): Promise<NvdaQuote> {
+  const nowMs = args.nowMs ?? Date.now();
+  const yahoo = args.deps?.fetchYahoo ?? fetchNvdaQuote;
+  try {
+    return await yahoo(nowMs);
+  } catch (err) {
+    const code = err instanceof AppError ? err.code : "";
+    if (code !== "quote_stale" && code !== "nvda_quote") throw err;
+  }
+  const chain = args.deps?.readChainlink ?? readNvdaSpotQuote;
+  const spot = await chain(args.feed, args.rpcUrl, nowMs);
+  return { price: spot.price, ageS: Math.floor(spot.ageS), source: "chainlink" };
 }

@@ -54,7 +54,8 @@ async function readLatestSpot(
   feed: Address,
   rpcUrl: string,
   maxAgeS = ORACLE_MAX_AGE_S,
-): Promise<number> {
+  nowMs = Date.now(),
+): Promise<{ spot: number; ageS: number }> {
   const client = createPublicClient({
     chain: base,
     transport: http(publicRpc(rpcUrl), { retryCount: 2, retryDelay: 300 }),
@@ -71,14 +72,14 @@ async function readLatestSpot(
   const updatedAt = round[3];
   if (answer <= 0n)
     throw new AppError("oracle_stale", "Chainlink answer is not positive");
-  const ageS = Date.now() / 1000 - Number(updatedAt);
+  const ageS = Math.max(0, nowMs / 1000 - Number(updatedAt));
   if (ageS > maxAgeS)
     throw new AppError("oracle_stale", "Chainlink answer is stale");
-  return btcSpotFromAnswer(answer, decimals);
+  return { spot: btcSpotFromAnswer(answer, decimals), ageS };
 }
 
 export async function readSpotUsd(feed: Address, rpcUrl = ""): Promise<number> {
-  const spot = await readLatestSpot(feed, rpcUrl);
+  const { spot } = await readLatestSpot(feed, rpcUrl);
   if (spot < SPOT_MIN || spot > SPOT_MAX) {
     throw new AppError("oracle_range", "Chainlink spot is outside the expected range");
   }
@@ -88,7 +89,7 @@ export async function readSpotUsd(feed: Address, rpcUrl = ""): Promise<number> {
 export async function readEthSpotUsd(feed: Address, rpcUrl: string): Promise<number> {
   if (!rpcUrl)
     throw new AppError("oracle_rpc", "BASE_RPC_URL missing");
-  const spot = await readLatestSpot(feed, rpcUrl);
+  const { spot } = await readLatestSpot(feed, rpcUrl);
   if (spot < ETH_SPOT_MIN || spot > ETH_SPOT_MAX) {
     throw new AppError("oracle_range", "Chainlink ETH spot is outside the expected range");
   }
@@ -96,13 +97,22 @@ export async function readEthSpotUsd(feed: Address, rpcUrl: string): Promise<num
 }
 
 export async function readNvdaSpotUsd(feed: Address, rpcUrl: string): Promise<number> {
+  const quote = await readNvdaSpotQuote(feed, rpcUrl);
+  return quote.price;
+}
+
+export async function readNvdaSpotQuote(
+  feed: Address,
+  rpcUrl: string,
+  nowMs = Date.now(),
+): Promise<{ price: number; ageS: number }> {
   if (!rpcUrl)
     throw new AppError("oracle_rpc", "BASE_RPC_URL missing");
-  const spot = await readLatestSpot(feed, rpcUrl, NVDA_ORACLE_MAX_AGE_S);
+  const { spot, ageS } = await readLatestSpot(feed, rpcUrl, NVDA_ORACLE_MAX_AGE_S, nowMs);
   if (spot < NVDA_SPOT_MIN || spot > NVDA_SPOT_MAX) {
     throw new AppError("oracle_range", "Chainlink NVDA spot is outside the expected range");
   }
-  return spot;
+  return { price: spot, ageS };
 }
 
 export function formatUsdDecimal(n: number): string {
