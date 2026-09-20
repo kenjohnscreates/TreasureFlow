@@ -47,6 +47,7 @@ function needsConfirm(reply: { kind: string; plan: Record<string, string | numbe
   if (reply.kind === "sweep") return action === "add_liquidity" || action === "noop";
   if (reply.kind === "lp_stocks") return action === "lp_stocks";
   if (reply.kind === "demo_flash") return action === "demo_flash" || action === "noop";
+  if (reply.kind === "dip_flash") return action === "dip_flash" || action === "noop";
   return false;
 }
 
@@ -541,6 +542,7 @@ function ChatPanel({
       label: "Buy cbBTC now",
       prompt: "buy cbBTC",
     },
+    { label: "Buy the dip", prompt: "buy the dip" },
     { label: "Send 10", prompt: SEND_CHIP },
     { label: "Send 50", prompt: SEND_REJECT_CHIP },
   ];
@@ -735,6 +737,8 @@ function ConfirmModal({
         ? `LP stocks (NVDAc). Notional under 15 USDC. Caps ${caps}.`
         : pending.kind === "demo_flash"
           ? `Market buy cbBTC. Spend ${pending.amount || "0"} USDC. 5% slippage. This is a market order. Does not promise a fill. Caps ${caps}.`
+          : pending.kind === "dip_flash"
+            ? `Buy-the-dip limit for cbBTC. Spend ${pending.amount || "0"} USDC. 0.001% below spot. Fills only if spot drops to that limit. Does not promise a fill. Caps ${caps}.`
           : `Send ${pending.amount} USDC to ${pending.dest}. Caps ${caps}.`;
   return (
     <div className="confirm-modal" role="dialog" aria-label="Confirm">

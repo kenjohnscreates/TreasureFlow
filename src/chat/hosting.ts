@@ -62,6 +62,7 @@ export function wouldSubmitChat(reply: {
   if (reply.kind === "sweep") return action === "add_liquidity" || action === "noop";
   if (reply.kind === "lp_stocks") return action === "lp_stocks";
   if (reply.kind === "demo_flash") return action === "demo_flash" || action === "noop";
+  if (reply.kind === "dip_flash") return action === "dip_flash" || action === "noop";
   return false;
 }
 

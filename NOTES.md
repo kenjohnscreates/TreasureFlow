@@ -402,3 +402,8 @@ Running build notes. One entry per task.
 ## B42 wallet 1 / wallet 2 pay names
 
 - Approved wallets labels are always Wallet 1 / Wallet 2 (no Founder). Parser accepts `send $10 USDC to wallet 1` (PAY_DEST_1, 10 USDC, at per-call cap) and `send $50 USDC to wallet 2` (PAY_DEST_2, rejected `per_call_cap`). PAY_DEST_* still works. Chips: Send 10 / Send 50. LLM canonical lists those two lines. Caps 15 / 10 / 30 / 15.
+
+## B43 buy-the-dip limit from chat
+
+- Chip **Buy the dip** / prompt `buy the dip` (also `buy dip`). POST `/chat` plan is a Flash **limit** buy of cbBTC, **0.001%** below Chainlink spot, spend `min(free USDC, 1)` if free >= 0.10 else noop. Funder is Bankr treasury `0x4c9D...a6c2` (not the founder RainbowKit wallet). Confirm is write key + founder sig. Does not cancel B5 ids. **Buy cbBTC now** stays market. Typed `limits` stays dry. Caps 15 / 10 / 30 / 15.
+- Tests 196. `test/b43.test.ts`: parse dip vs market, 0.001% limit quote, 0 / <0.10 noop, $1 when free >= 1, B5 ids protected, chip + LLM. `pnpm test` + `pnpm --dir web exec tsc --noEmit` pass. Browser `/app`: chip opened Confirm (spend 0.235011, 0.001% below, no fill promise). **Cancel**. Did not Confirm. No `--live`. No Flash POST `/order`. Treasury `0x4c9D...a6c2`. No secrets.

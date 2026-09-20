@@ -396,11 +396,11 @@ export async function chatLiveOpts(config: AppConfig, prompt: string): Promise<C
     opts.snapshot = portfolioToSnapshot(snap, lpValueUsdc);
   }
 
-  if (intent.kind === "pay" || intent.kind === "demo_flash") {
+  if (intent.kind === "pay" || intent.kind === "demo_flash" || intent.kind === "dip_flash") {
     opts.spend = await loadSpendSafe();
   }
 
-  if (intent.kind === "demo_flash") {
+  if (intent.kind === "demo_flash" || intent.kind === "dip_flash") {
     try {
       opts.spotUsd = await readSpotUsd(BASE.btcUsdFeed, config.baseRpcUrl);
     } catch {

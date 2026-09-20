@@ -160,17 +160,30 @@ export async function maybeSubmitChatFlash(
   opts: ChatOpts = {},
   deps: SubmitWriteDeps = {},
 ): Promise<ChatReply> {
-  if (reply.kind !== "demo_flash") return reply;
-  if (reply.plan.action !== "demo_flash" && reply.plan.action !== "noop") return reply;
-  const blocked = await guardOutbound("demo_flash", config, deps);
+  const dip = reply.kind === "dip_flash";
+  if (reply.kind !== "demo_flash" && !dip) return reply;
+  const actionOk = dip
+    ? reply.plan.action === "dip_flash" || reply.plan.action === "noop"
+    : reply.plan.action === "demo_flash" || reply.plan.action === "noop";
+  if (!actionOk) return reply;
+  const kind = dip ? "dip_flash" : "demo_flash";
+  const blocked = await guardOutbound(kind, config, deps);
   if (blocked) return blocked;
   const usdcFree = opts.snapshot?.usdcFree ?? deps.usdcFree ?? 0n;
   try {
-    const result = await executeDemoFlash({ config, usdcFree, live: true, deps });
+    const result = await executeDemoFlash({
+      config,
+      usdcFree,
+      live: true,
+      mode: dip ? "limit" : "market",
+      deps,
+    });
     if (!result.sent) {
       return {
-        kind: "demo_flash",
-        summary: `Market buy noop (${result.reason}). Did not place an order.`,
+        kind,
+        summary: dip
+          ? `Buy-the-dip noop (${result.reason}). Did not place an order.`
+          : `Market buy noop (${result.reason}). Did not place an order.`,
         plan: {
           ...reply.plan,
           action: "noop",
@@ -178,23 +191,25 @@ export async function maybeSubmitChatFlash(
           reason: result.reason,
           qtyUsdc: result.qtyUsdc,
           pctBelowSpot: result.pctBelowSpot,
-          orderType: "market",
-          maxSlippage: "0.05",
+          orderType: dip ? "limit" : "market",
+          ...(dip ? {} : { maxSlippage: "0.05" }),
           ...(result.limitPriceUsd ? { limitPriceUsd: result.limitPriceUsd } : {}),
         },
       };
     }
     return {
-      kind: "demo_flash",
-      summary: `Placed market buy of cbBTC. Spend ${result.qtyUsdc} USDC. 5% slippage. This is a market order. Does not promise a fill. Order ${result.orderId ?? ""}.`,
+      kind,
+      summary: dip
+        ? `Placed buy-the-dip limit for cbBTC. Spend ${result.qtyUsdc} USDC. ${result.pctBelowSpot}% below spot. Limit $${result.limitPriceUsd}/cbBTC. Fills only if spot drops to that limit. Does not promise a fill. Order ${result.orderId ?? ""}.`
+        : `Placed market buy of cbBTC. Spend ${result.qtyUsdc} USDC. 5% slippage. This is a market order. Does not promise a fill. Order ${result.orderId ?? ""}.`,
       plan: {
         ...reply.plan,
-        action: "demo_flash",
+        action: dip ? "dip_flash" : "demo_flash",
         sent: true,
         qtyUsdc: result.qtyUsdc,
         pctBelowSpot: result.pctBelowSpot,
-        orderType: "market",
-        maxSlippage: "0.05",
+        orderType: dip ? "limit" : "market",
+        ...(dip ? {} : { maxSlippage: "0.05" }),
         ...(result.orderId ? { orderId: result.orderId } : {}),
         ...(result.status ? { status: result.status } : {}),
         ...(result.limitPriceUsd ? { limitPriceUsd: result.limitPriceUsd } : {}),
@@ -202,7 +217,7 @@ export async function maybeSubmitChatFlash(
       },
     };
   } catch (err) {
-    if (err instanceof AppError) return rejectChat("demo_flash", err.code);
+    if (err instanceof AppError) return rejectChat(kind, err.code);
     throw err;
   }
 }
@@ -218,5 +233,6 @@ export async function maybeSubmitChat(
   if (reply.kind === "sweep") return maybeSubmitChatSweep(reply, config, opts, deps);
   if (reply.kind === "lp_stocks") return maybeSubmitChatLp(reply, config, opts, deps);
   if (reply.kind === "demo_flash") return maybeSubmitChatFlash(reply, config, opts, deps);
+  if (reply.kind === "dip_flash") return maybeSubmitChatFlash(reply, config, opts, deps);
   return reply;
 }

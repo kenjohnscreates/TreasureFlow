@@ -16,10 +16,12 @@ import {
 } from "../config/constants.ts";
 import { AppError } from "../errors.ts";
 import {
+  DEMO_DIP_PCT_BELOW,
   DEMO_FLASH_MAX_SLIPPAGE,
   DEMO_FLASH_MIN_USDC,
   DEMO_FLASH_PCT_BELOW,
   DEMO_FLASH_USDC,
+  demoFlashLimitPrice,
   sizeDemoFlashSpend,
 } from "../flash/demoOrder.ts";
 import { buildLimitLadder } from "../flash/ladder.ts";
@@ -308,6 +310,61 @@ function demoFlashCopy(qtyUsdc: string): string {
   return `Market buy cbBTC. Spend ${qtyUsdc} USDC. 5% slippage. This is a market order. Does not promise a fill. Confirm to place.`;
 }
 
+function dipFlashCopy(qtyUsdc: string, limitPriceUsd: string): string {
+  const limit = limitPriceUsd ? ` Limit $${limitPriceUsd}/cbBTC.` : "";
+  return `Buy-the-dip limit for cbBTC. Spend ${qtyUsdc} USDC. ${DEMO_DIP_PCT_BELOW}% below spot.${limit} Fills only if spot drops to that limit. Does not promise a fill. Confirm to place.`;
+}
+
+function dipFlashPlan(config: AppConfig, opts: ChatOpts): ChatReply {
+  if (config.paused) return rejectChat("dip_flash", "paused");
+  try {
+    assertPerCall(DEMO_FLASH_USDC, config.policy);
+    assertHardStop(DEMO_FLASH_USDC, config.policy);
+  } catch (err) {
+    if (err instanceof AppError) return rejectChat("dip_flash", err.code);
+    throw err;
+  }
+  const snapshot = snapshotOf(opts);
+  const spendUsdc = snapshot ? sizeDemoFlashSpend(snapshot.usdcFree) : 0n;
+  const qtyUsdc = formatUnits(spendUsdc, USDC_DECIMALS);
+  const limitPriceUsd =
+    opts.spotUsd !== undefined
+      ? demoFlashLimitPrice(opts.spotUsd, DEMO_DIP_PCT_BELOW).toFixed(2)
+      : "";
+  const plan: Record<string, string | number | boolean> = {
+    action: "noop",
+    sent: false,
+    qtyUsdc,
+    pctBelowSpot: DEMO_DIP_PCT_BELOW,
+    orderType: "limit",
+    limitPriceUsd: limitPriceUsd || `${DEMO_DIP_PCT_BELOW}% below spot`,
+    hardStopOk: DEMO_FLASH_USDC < config.policy.hardStopUsdc,
+  };
+  if (!snapshot) {
+    return {
+      kind: "dip_flash",
+      summary: `${MISSING_LIVE} Confirm will noop.`,
+      plan: {
+        ...plan,
+        qtyUsdc: formatUnits(DEMO_FLASH_USDC, USDC_DECIMALS),
+        reason: "no_live_snapshot",
+      },
+    };
+  }
+  if (spendUsdc <= 0n) {
+    return {
+      kind: "dip_flash",
+      summary: `Not enough USDC for a buy-the-dip cbBTC limit (need at least ${formatUnits(DEMO_FLASH_MIN_USDC, USDC_DECIMALS)}). Confirm will noop.`,
+      plan: { ...plan, reason: snapshot.usdcFree <= 0n ? "no free USDC" : "insufficient_usdc" },
+    };
+  }
+  return {
+    kind: "dip_flash",
+    summary: dipFlashCopy(qtyUsdc, limitPriceUsd),
+    plan: { ...plan, action: "dip_flash", reason: "place dip flash" },
+  };
+}
+
 function demoFlashPlan(config: AppConfig, opts: ChatOpts): ChatReply {
   if (config.paused) return rejectChat("demo_flash", "paused");
   try {
@@ -365,6 +422,7 @@ export function handleChat(
   if (intent.kind === "sweep") return sweepPlan(config, opts);
   if (intent.kind === "lp_stocks") return lpStocksPlan(config);
   if (intent.kind === "demo_flash") return demoFlashPlan(config, opts);
+  if (intent.kind === "dip_flash") return dipFlashPlan(config, opts);
   if (intent.kind === "limits") return limitsPlan(opts);
   if (intent.kind === "pay") return payPlan(raw, config, opts);
   if (intent.kind === "balance") return balancePlan(config, opts);

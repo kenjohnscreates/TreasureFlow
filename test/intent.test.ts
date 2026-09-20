@@ -85,6 +85,7 @@ describe("parseIntent", () => {
       "demo_flash",
     );
     expect(parseIntent("buy cbBTC").kind).toBe("demo_flash");
+    expect(parseIntent("buy the dip").kind).toBe("dip_flash");
     expect(parseIntent("limits").kind).toBe("limits");
     expect(parseIntent("ladder").kind).toBe("limits");
   });

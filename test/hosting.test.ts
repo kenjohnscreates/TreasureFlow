@@ -112,10 +112,12 @@ describe("CHAT_KEY write gate", () => {
     const noop = { kind: "sweep" as const, plan: { action: "noop" as const } };
     const lp = { kind: "lp_stocks" as const, plan: { action: "lp_stocks" as const } };
     const flash = { kind: "demo_flash" as const, plan: { action: "demo_flash" as const } };
+    const dip = { kind: "dip_flash" as const, plan: { action: "dip_flash" as const } };
     expect(chatKeyGate(add, undefined, "secret")).toEqual({ ok: true, submit: false });
     expect(chatKeyGate(noop, "secret", "secret")).toEqual({ ok: true, submit: true });
     expect(chatKeyGate(lp, "secret", "secret")).toEqual({ ok: true, submit: true });
     expect(chatKeyGate(flash, undefined, "secret")).toEqual({ ok: true, submit: false });
+    expect(chatKeyGate(dip, "secret", "secret")).toEqual({ ok: true, submit: true });
     expect(chatKeyGate(add, "wrong", "secret")).toMatchObject({
       ok: false,
       status: 401,
