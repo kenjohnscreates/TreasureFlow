@@ -1,103 +1,143 @@
 # TreasureFlow
 
-A company's idle cash sits in a Bankr treasury on Base. The agent can sweep extra USDC into Aerodrome USDC/USDT LP for fee yield, LP NVDAc on Slipstream when asked, pay allowlisted people, rest buy-the-dip Flash limits for cbBTC, and place a small market buy of cbBTC from free USDC.
+A company's idle cash sits in a Bankr treasury on Base. The agent can sweep extra USDC into Aerodrome USDC/USDT LP for fee yield, add size to an existing NVDAc Slipstream NFT, pay allowlisted wallets, rest buy-the-dip Flash limits for cbBTC, and place a small market buy of cbBTC from free USDC.
 
 The founder deposits. The agent never spends the founder's personal wallet.
 
-This is a Runtime NYC hackathon demo (Sep 2026). Not a pooled product. Screens show trailing fee yield only. No APY promise.
+Runtime NYC hackathon demo (Sep 2026). Not a pooled product. Screens show trailing fee yield only. No APY promise.
 
-**Live app:** [treasureflow.vercel.app](https://treasureflow.vercel.app/) (landing) and [treasureflow.vercel.app/app](https://treasureflow.vercel.app/app) (dApp). Host is Vercel Hobby two-service (Vite `web/` + Hono agent `src/chat/http.ts`). Git SHA `0933378` (B40).
+**Live app:** [treasureflow.vercel.app](https://treasureflow.vercel.app/) (landing) and [treasureflow.vercel.app/app](https://treasureflow.vercel.app/app) (dApp). Production tracks GitHub `main`. Host is Vercel Hobby, two services: Vite `web/` plus Hono agent `src/chat/http.ts`.
+
+**Need access, a live write walkthrough, or help?** Message **Kenny** on GitHub ([@kenjohnscreates](https://github.com/kenjohnscreates)). Do not ask anyone else for keys. Keys are not in this repo.
 
 Geo / VPN for tokenized stocks: [docs/geo.md](docs/geo.md).
 
-## What you see in the app
+## For hackathon judges
 
-**Landing (`/`)**
+Start here: **[treasureflow.vercel.app](https://treasureflow.vercel.app/)**. Click **Enter app**.
 
-Short pitch. Enter the dApp.
+The hosted site is **read-mostly on purpose**. You can inspect the live company treasury. You cannot spend it.
 
-**dApp (`/app`)**
+### You can
 
-- **Company treasury card:** tag, TreasureFlow, truncated Bankr addr (`0x4c9D...a6c2`), live **total USD**. Positions live in the table below, not as a second line on the card.
-- **External Wallet / Company:** founder Connect via RainbowKit (EIP-6963 injected wallets). Optional WalletConnect QR if `VITE_WALLETCONNECT_PROJECT_ID` is set. Connect does not create a Bankr or Dynamic server wallet.
-- **Home:** Active positions + chat.
-- **Limits & Orders:** local policy sliders, Flash table, BaseScan receipts.
-- **Lend:** removed.
+- Open the landing and the dApp with no wallet
+- Read live total USD, cash, held assets, sAMM USDC/USDT, and Slipstream NFT `#6356494`
+- Open **Limits & Orders** (Flash table + BaseScan receipts) and **Approved wallets**
+- Drag the policy sliders (local UI only; they do not save and do not change live caps)
+- Click chat chips or type a prompt and get a **plan** (`sent: false`)
+- Click **Send $50** and see the per-call cap reject (no Bankr call)
+- Connect any injected wallet via RainbowKit (Connect does not create a Bankr or Dynamic server wallet)
 
-Active positions (when live): Cash USDC, Held USDT, Held NVDAc, Held ETH, LP USDC/USDT sAMM (quoted pair), LP NVDAc Slipstream (NFT `#6356494` staked). `live:false` shows `--`, never the old 55/40 demo snapshot.
+### You cannot (by design)
 
-Total USD sums legs that succeed: free USDC + free USDT (1:1), ETH * Chainlink Base ETH/USD, loose NVDAc * Chainlink Coinbase NVDA, sAMM quoted USDC+USDT, Slipstream principal USD. Failed legs are omitted, not invented.
+- Confirm a live pay, sweep, LP, or Flash order
+- Pause / Resume outbound
+- Sign a deposit (Sign deposit is founder-address only)
+- See API keys, the write key, private keys, or full allowlist addresses
+- Use **Lend & Borrow** (greyed out, not in this demo)
 
-Chat chips: Deposit 20 USDC, Sweep extra cash, LP stocks, Buy cbBTC now, Send 8.
+Live writes need the founder wallet plus a write key that is **not published**. If you need a confirmed onchain click during judging, message Kenny.
 
-Reads (keys stay on the server):
+Proof already on Base is in [Proof on Base](#proof-on-base-mainnet) below. Those hashes are public BaseScan links.
+
+## Click path in the dApp
+
+1. **Home.** Cyan **Company treasury** card is live **total USD** (`0x4c9D...a6c2`). Positions are the table, not a second line on the card. Chat chips are under the composer, in demo order.
+2. **Limits & Orders.** Sliders show 15 / 10 / 30. Flash table is B5 cbBTC limits. Receipts are static BaseScan rows.
+3. **Approved wallets.** Wallet 1 (`0xD428...6d2A`) and Wallet 2 (`0x4D43...432f`). The agent can only pay those dests.
+4. **Lend & Borrow.** Disabled.
+
+`live:false` paints `--`. It never falls back to the old 55/40 demo snapshot.
+
+## Chat chips (demo order)
+
+| Chip | What it does | On Vercel without founder access |
+| --- | --- | --- |
+| Deposit 20 USDC | Unsigned ERC-20 to the treasury. Founder signs. Agent does not broadcast. | Plan + Sign deposit only if you are the founder |
+| Send $10 | Pay 10 USDC to Wallet 1 (at the per-call cap) | Plan. Confirm is blocked |
+| Send $50 | Pay 50 USDC to Wallet 2 | **Rejected.** Per-call cap is 10 USDC |
+| Buy the dip $1 | Flash **limit** buy of cbBTC, 0.001% below Chainlink spot, spend `min(free USDC, 1)` | Plan. Confirm is blocked |
+| LP stocks $10 | `increaseLiquidity` on Slipstream NFT `#6356494` (mint only if no live NVDAc NFT) | Plan. Confirm is blocked |
+| Sweep extra cash | Add surplus USDC (above the 15 buffer, min 5) to sAMM USDC/USDT | Plan. Confirm is blocked |
+| Buy $1 cbBTC now | Flash **market** buy, 5% max slippage, spend `min(free USDC, 1)` | Plan. Confirm is blocked |
+
+Typed `limits` stays dry (does not place or cancel the B5 rungs).
+
+Chip and typed prompts parse first. Unknown NL goes through Bankr LLM Gateway (`llm.bankr.bot`, default `gemini-3-flash`) as a **text mapper only**. The mapper cannot set `sent: true`. It rewrites to one canonical line, then the same parser and caps run.
+
+## How the build is put together
+
+```
+web/                  landing + dApp (RainbowKit, chat UI)
+src/chat/             Hono agent: intent, Confirm gate, GET /treasury
+src/bankr/            Bankr Wallet API + aero-stock-lp live path
+src/aerodrome/        sAMM quoteRemoveLiquidity + Slipstream reads
+src/flash/            Flash Network cbBTC (B5 limits, dip limit, market)
+src/oracle/           Chainlink Base ETH/USD + Coinbase NVDA
+src/demo/evidence.ts  BaseScan receipts + B5 order ids shown in the app
+src/policy/           buffer, per-call, daily, hard stop
+vendor/aero-stock-lp  vendored Bankr skill (plan / size / settle)
+test/                 Vitest
+docs/                 fetched vendor docs (not live product truth)
+```
+
+**Wallets**
+
+- **Founder / External Wallet.** Kenny's personal wallet. Connect via RainbowKit. The agent does not control it. Deposits are unsigned ERC-20 the founder broadcasts.
+- **Company treasury.** Bankr embedded wallet `0x4c9D...a6c2`. The agent can spend this, under the caps, to allowlisted dests only. Bankr signs treasury txs. Server auth is `X-API-Key` (never in `VITE_*`, never logged, never committed).
+
+**Hosted writes**
+
+- Confirm needs header `x-treasureflow-key` (dApp **Write key** field, in-memory only) plus founder `personal_sign` of `GET /auth/challenge`.
+- That secret is `CHAT_KEY` on the server. Do not put it in `VITE_*`. Never commit it.
+- Pause / Resume uses the same write key.
+
+**Reads (keys stay on the server)**
 
 - `GET /status`: policy, truncated treasury, founder display, pause
 - `GET /treasury`: live Bankr portfolio + USD legs + LP quotes
-- `GET /flash-orders`: B5 ids plus any demo market id (NOTES "resting" if keys are missing)
+- `GET /flash-orders`: B5 ids plus any later demo Flash id
 
-## What the agent can spend
+Total USD sums legs that succeed: free USDC + free USDT (1:1), ETH * Chainlink Base ETH/USD, loose NVDAc * Chainlink Coinbase NVDA, sAMM quoted USDC+USDT, Slipstream principal USD. Failed legs are omitted, not invented.
 
-**Founder wallet (Connect)**
+`increaseLiquidity` on `#6356494` adds real LP NAV and pool fees. Extra size may not count toward gauge AERO until a later unstake/restake. That restake is not in this demo.
 
-- Founder-only. The agent does not control it.
-- Deposits are unsigned ERC-20 (`deposit 20 USDC`, `deposit $5 usdc`). The founder signs and broadcasts. The agent does not broadcast deposits.
+## Caps
 
-**Bankr treasury (`0x4c9D...a6c2`, Club true)**
+Demo scale (~$50-100 treasury):
 
-- The agent can spend this wallet, under the caps below.
-- Pays go only to allowlisted dests (`PAY_DEST_1` / `PAY_DEST_2`).
-- Bankr signs treasury txs. Server auth is `X-API-Key`. Keys are never logged.
+- Buffer: 15 USDC (never swept)
+- Per-call cap: 10 USDC
+- Daily cap: 30 USDC
+- Hard stop: 15 USDC per mainnet tx
+- Sweep min: 5 USDC surplus
+- Reject demo: 50 USDC
+- LP notional: 10 USDC
+- Dip / market Flash: `min(free USDC, 1)` if free >= 0.10, else noop
 
-**Hosted chat writes**
+Sliders on Limits & Orders are local React only (0-100). They do not save. They do not POST. Live policy is the numbers above.
 
-- Confirm needs header `x-treasureflow-key` (the dApp **Write key** field) plus founder `personal_sign` of `GET /auth/challenge`.
-- That secret is `CHAT_KEY` on the server. Do not put `CHAT_KEY` in `VITE_*`. Never commit it.
-- Pause / Resume is the same write key. Pause stops outbound.
-
-### Chat: live vs plan
-
-Chip and typed prompts parse first. Unknown NL goes through Bankr LLM Gateway (`llm.bankr.bot`, default `gemini-3-flash`) as a **text mapper only**. The mapper cannot set `sent: true`. It rewrites to one canonical line, then the same parser and gates run.
-
-**Live from `POST /chat` after Confirm (write key + founder sig)**
-
-- Allowlisted pay (B13)
-- Unwind-then-pay (B14): pull USDC from sAMM LP, then transfer
-- Sweep extra cash into USDC/USDT LP (B33)
-- LP stocks / LP NVDAc (B33)
-- Market buy cbBTC from free USDC (B38)
-
-Without the write key, those return a plan (`sent: false`). Cancel on the confirm modal does not POST a second time.
-
-**Always unsigned (founder signs)**
-
-- Deposit USDC / NVDAc to the treasury, including optional `$` before the amount
-
-**Rejected**
-
-- Send 50: per-call cap is 10. Does not call Bankr.
-
-Cash USDC is often below the 15 buffer. Sweep noops if surplus is under the 5 USDC min. Send 8 needs free USDC (or LP to unwind). Buy cbBTC now sizes to `min(free USDC, 1)` only if free is at least 0.10 USDC; otherwise it noops and does not invent funds.
+Hosted spend log and pause file live under `/tmp` (ephemeral across serverless invocations). Daily cap is best-effort on Vercel.
 
 ## Proof on Base (mainnet)
 
-Every hash is a BaseScan link. **Flash fills are unverified.** The B38 market buy was not placed from this repo (Confirm cancelled).
+Every hash is a BaseScan link. **Flash fills are unverified.** Chat Confirm for dip / market Flash / B46 increase has not been broadcast from this repo (plans exist; founder Confirm is how live writes happen).
 
-| Step | What | Proof |
-| --- | --- | --- |
-| B2 | Pay 8 USDC to `PAY_DEST_1` (`0xD428...6d2A`) | [0x725611366d7ea9790ab7852740d7403c234f2c22057eb4ef9a573d9ccfb312fe](https://basescan.org/tx/0x725611366d7ea9790ab7852740d7403c234f2c22057eb4ef9a573d9ccfb312fe) |
-| B3 | Slipstream NVDAc mint NFT `#6356494` | [0x6875cfaa3a6eaca7e2da7802846367f9c836b255707b45f560536a7a9174f131](https://basescan.org/tx/0x6875cfaa3a6eaca7e2da7802846367f9c836b255707b45f560536a7a9174f131) |
-| B3 | Stake that NFT | [0x19dd797353ba41145bc56a201291684864eedbcc4ff1bf3b16591c4f8e0770bf](https://basescan.org/tx/0x19dd797353ba41145bc56a201291684864eedbcc4ff1bf3b16591c4f8e0770bf) |
-| B4 | sAMM add (4.38 USDC + 5 USDT) | [0xba78ae950e062fd2daeffc53d92f160a0544ce1aa50e24b920f02f7c31655e99](https://basescan.org/tx/0xba78ae950e062fd2daeffc53d92f160a0544ce1aa50e24b920f02f7c31655e99) |
-| B5 | Flash USDC approve | [0xb4d5193e653259cba80f342ce75753907d0a6733f115b903f8d843cd44585c46](https://basescan.org/tx/0xb4d5193e653259cba80f342ce75753907d0a6733f115b903f8d843cd44585c46) |
-| B13 | Chat Send 8 | [0x8a06a1b827f278f3a21d7eafd760b154f547e7613473aa52b7a2ca76ff1975cb](https://basescan.org/tx/0x8a06a1b827f278f3a21d7eafd760b154f547e7613473aa52b7a2ca76ff1975cb) |
-| B14 | Unwind: approve LP | [0xb1f755bf5e0c6c304743975849f72d7e36e950af44d87b5031cf2df211f500e8](https://basescan.org/tx/0xb1f755bf5e0c6c304743975849f72d7e36e950af44d87b5031cf2df211f500e8) |
-| B14 | Unwind: `removeLiquidity` | [0x85fe9aae46d2a9979d2950915565b410a64910f852c61131efc19d63b454c566](https://basescan.org/tx/0x85fe9aae46d2a9979d2950915565b410a64910f852c61131efc19d63b454c566) |
-| B14 | Transfer 10 USDC | [0xe77dabe8c8f1dd9b895ecd378c49f3d9ee287b7ea71c10dc33d0b07997d0672b](https://basescan.org/tx/0xe77dabe8c8f1dd9b895ecd378c49f3d9ee287b7ea71c10dc33d0b07997d0672b) |
+| What | Proof |
+| --- | --- |
+| Pay 8 USDC to Wallet 1 (`0xD428...6d2A`) | [0x725611366d7ea9790ab7852740d7403c234f2c22057eb4ef9a573d9ccfb312fe](https://basescan.org/tx/0x725611366d7ea9790ab7852740d7403c234f2c22057eb4ef9a573d9ccfb312fe) |
+| Slipstream NVDAc mint NFT `#6356494` | [0x6875cfaa3a6eaca7e2da7802846367f9c836b255707b45f560536a7a9174f131](https://basescan.org/tx/0x6875cfaa3a6eaca7e2da7802846367f9c836b255707b45f560536a7a9174f131) |
+| Stake that NFT | [0x19dd797353ba41145bc56a201291684864eedbcc4ff1bf3b16591c4f8e0770bf](https://basescan.org/tx/0x19dd797353ba41145bc56a201291684864eedbcc4ff1bf3b16591c4f8e0770bf) |
+| sAMM add (4.38 USDC + 5 USDT) | [0xba78ae950e062fd2daeffc53d92f160a0544ce1aa50e24b920f02f7c31655e99](https://basescan.org/tx/0xba78ae950e062fd2daeffc53d92f160a0544ce1aa50e24b920f02f7c31655e99) |
+| Flash USDC approve | [0xb4d5193e653259cba80f342ce75753907d0a6733f115b903f8d843cd44585c46](https://basescan.org/tx/0xb4d5193e653259cba80f342ce75753907d0a6733f115b903f8d843cd44585c46) |
+| Chat pay 8 USDC | [0x8a06a1b827f278f3a21d7eafd760b154f547e7613473aa52b7a2ca76ff1975cb](https://basescan.org/tx/0x8a06a1b827f278f3a21d7eafd760b154f547e7613473aa52b7a2ca76ff1975cb) |
+| Unwind: approve LP | [0xb1f755bf5e0c6c304743975849f72d7e36e950af44d87b5031cf2df211f500e8](https://basescan.org/tx/0xb1f755bf5e0c6c304743975849f72d7e36e950af44d87b5031cf2df211f500e8) |
+| Unwind: `removeLiquidity` | [0x85fe9aae46d2a9979d2950915565b410a64910f852c61131efc19d63b454c566](https://basescan.org/tx/0x85fe9aae46d2a9979d2950915565b410a64910f852c61131efc19d63b454c566) |
+| Transfer 10 USDC | [0xe77dabe8c8f1dd9b895ecd378c49f3d9ee287b7ea71c10dc33d0b07997d0672b](https://basescan.org/tx/0xe77dabe8c8f1dd9b895ecd378c49f3d9ee287b7ea71c10dc33d0b07997d0672b) |
 
-B2 through B5 were CLI `--live`. B13 and B14 were live `POST /chat`. Sweep / LP / market Flash can also submit from chat after Confirm.
+First five rows were CLI `--live`. Chat pay / unwind were live `POST /chat` after Confirm. Same gates still sit in front of sweep, LP increase, and Flash from chat.
 
-### Flash cbBTC (B5 limits + B38 market)
+### Flash cbBTC (resting B5 limits)
 
 B5 rungs are **limit $/cbBTC**, not USDC size. Each rung spends **$0.53 USDC**. They fill only if spot dumps to that limit. Status last seen **ACCEPTED**. **Fills unverified.** Do not cancel or replace these ids.
 
@@ -107,25 +147,11 @@ B5 rungs are **limit $/cbBTC**, not USDC size. Each rung spends **$0.53 USDC**. 
 | 4% | `afcc2cb5-e93b-4565-98be-6fe60bc8c744` | ~$73548.53 | $0.53 USDC |
 | 6% | `296280cb-3ba3-466f-96e6-f0f018fea652` | ~$72016.27 | $0.53 USDC |
 
-**Buy cbBTC now** is a Flash **market** buy (`orderType: market`, 5% max slippage). Spend is `min(free USDC, 1)` when free is at least 0.10 USDC. It does not cancel the B5 rungs. Copy: this is a market order. Does not promise a fill.
-
-## Limits / safety
-
-Demo scale (~$50-100 treasury):
-
-- Buffer: 15 USDC (leave this in cash)
-- Per-call cap: 10 USDC
-- Daily cap: 30 USDC
-- Demo pay: 8 USDC
-- Reject: 50 USDC
-- Hard stop: 15 USDC per mainnet tx
-- Demo sweep: 5 USDC min
-
-Sliders on Limits & Orders are local React only (0-100). They do not save. They do not POST. Live policy is the numbers above.
-
-Hosted spend log and pause file live under `/tmp` (ephemeral across serverless invocations). Daily cap is best-effort on Vercel.
+**Buy the dip $1** is a new Flash **limit** (0.001% below spot). **Buy $1 cbBTC now** is a Flash **market** buy. Neither cancels the B5 rungs. Copy: does not promise a fill.
 
 ## How to run locally
+
+Message Kenny first if you need secrets. Never commit `.env`. Never paste keys into GitHub issues or chat logs.
 
 ```bash
 pnpm install
@@ -139,31 +165,45 @@ Landing is `/`. dApp is `/app`. Do not use Runtime ports 5173/8787.
 
 Connect the **founder** wallet via RainbowKit. Chat still works without Connect. Connect does not create a Bankr or Dynamic server wallet.
 
-Dry checks:
+Dry checks (no secrets required for `pnpm test`):
+
+```bash
+pnpm test
+pnpm typecheck
+```
+
+CLI live writes exist (same Bankr/Flash paths as chat Confirm). Do not run `--live` unless Kenny asked:
 
 ```bash
 pnpm env:check
-pnpm test
 pnpm bankr:me
-```
-
-CLI live writes still exist (same Bankr/Flash paths as chat Confirm):
-
-```bash
 pnpm bankr:pay -- --live
 pnpm bankr:lp -- --live
 pnpm bankr:sweep -- --live
 pnpm bankr:limits -- --live
 ```
 
-Hosted URLs are at the top of this file.
-
 ## Honest not-yet
 
 - Flash fills are unverified. B5 rungs rest until spot hits the limit.
-- Buy cbBTC now has not been Confirmed on the live treasury from this repo.
-- Free USDC is often ~0.24, so Send 8 and sweep need a founder deposit first.
+- Dip / market Flash and Slipstream increase from chat have not been Confirmed on the live treasury from this repo.
+- Free USDC is often thin, so Send $10 / sweep / $10 LP need a founder deposit first.
+- Extra LP size on `#6356494` may not earn extra gauge AERO until a later restake.
 - Policy sliders do not persist.
 - Lend is off.
 - Nightly cron is not the hosted path.
 - Spend / pause files do not survive every Vercel invocation.
+
+## Docs map
+
+| File | What it is |
+| --- | --- |
+| [README.md](README.md) | **Start here.** Live product + judge notes |
+| [HANDOFF-BANKR.md](HANDOFF-BANKR.md) | Short builder note for this Bankr branch |
+| [docs/geo.md](docs/geo.md) | VPN / B20 stock geo |
+| [NOTES.md](NOTES.md) | Build log (B1...). Not the product spec |
+| [reviews/](reviews/) | Per-milestone reviewer files |
+| [HANDOFF.md](HANDOFF.md) | Historical Dynamic-tree handoff. Not live |
+| [PUNCH-LIST.md](PUNCH-LIST.md) | Historical Dynamic-era checklist. Not live |
+| [PRD.md](PRD.md) / [BUILD-PLAN.md](BUILD-PLAN.md) | Original process docs. Do not treat as live UI |
+| [docs/](docs/) | Fetched vendor pages. Implementation in `src/` wins |

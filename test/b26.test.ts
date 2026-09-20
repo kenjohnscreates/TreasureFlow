@@ -308,6 +308,10 @@ describe("B26 dApp source guards", () => {
     expect(landing).toContain("founder signs deposits");
     expect(landing).toContain("Pause stops outbound");
     expect(landing).toContain("Fee yield only");
+    expect(landing).toContain("Runtime judges");
+    expect(landing).toContain("kenjohnscreates");
+    expect(landing).toContain("read-mostly");
+    expect(landing).toContain("I'm a Runtime judge. What can I click?");
     expect(landing).not.toMatch(/\u2014/);
     expect(appSrc).not.toMatch(/\u2014/);
   });

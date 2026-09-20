@@ -1,5 +1,7 @@
 # Docs index
 
+> Vendor mirrors fetched for the hackathon. **Not live product truth.** Start at [README.md](../README.md).
+
 Fetched for TreasureFlow / Runtime NYC. Count: 64.
 
 | File | Source | Fetched | Bytes |

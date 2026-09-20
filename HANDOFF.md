@@ -1,6 +1,6 @@
 # TreasureFlow orchestrator handoff
 
-> **This file is the old Dynamic-tree handoff.** The live Bankr product is [README.md](README.md) and [HANDOFF-BANKR.md](HANDOFF-BANKR.md). Do not treat the rest of this file as current product truth.
+> **This file is the old Dynamic-tree handoff.** Live product, Vercel click path, and onchain proof: [README.md](README.md). Builder note: [HANDOFF-BANKR.md](HANDOFF-BANKR.md). Do not treat the rest of this file as current product truth.
 
 Date: 2026-09-16. Runtime NYC. Demo Sat Sep 19 ~4-5pm EDT.
 Repo: https://github.com/kenjohnscreates/TreasureFlow (private, `main` at `2ccddcd`).

@@ -1,5 +1,7 @@
 # Treasury Sweeper: Build Plan v1
 
+> **Historical.** This is the original Dynamic-era process. Live product, Vercel click path, and onchain proof: [README.md](README.md).
+
 Companion to `treasury-sweeper-prd-v1.md`. Written 2026-09-16. The PRD says what; this file says who builds it, in what order, and when to stop.
 
 ## 1. Agent topology

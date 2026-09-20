@@ -2,6 +2,8 @@
 
 First-party runbook for Runtime NYC. Not a Coinbase eligibility matrix. Coinbase does not publish a full country list.
 
+Live product and judge click path: [README.md](../README.md).
+
 This product talks about trailing fee yield only. No forward APY.
 
 ## Coinbase B20 tokenized stocks

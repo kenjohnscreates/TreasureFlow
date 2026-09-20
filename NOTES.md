@@ -420,3 +420,9 @@ Running build notes. One entry per task.
 
 - Chat `lp stocks` Confirm adds $10 to live NVDAc NFT `#6356494` via `increaseLiquidity` (same token id, no unstake). Mint only if no live NVDAc NFT. Copy says add to NFT, not mint. Caps 15 / 10 / 30 / 15.
 - Tests 202. `test/b44.test.ts` + `test/lp.test.ts`. Vendor selftest 37 including increase 6-word vector. `pnpm test` + `pnpm --dir web exec tsc --noEmit` pass. No `--live`. No Confirm. Treasury `0x4c9D...a6c2`. No secrets.
+
+## Docs: judge README + Vercel click path
+
+- Rewrote `README.md` for GitHub / Runtime judges: live Vercel is read-mostly, can vs cannot, chip table with amounts, repo map, truncated wallets, BaseScan proof, message Kenny (`kenjohnscreates`) for write access. No keys. Caps 15 / 10 / 30 / 15.
+- Landing: judge note under Enter app plus FAQ "I'm a Runtime judge. What can I click?". `HANDOFF-BANKR.md` points at README. Historical banners on `PRD.md`, `BUILD-PLAN.md`, `docs/INDEX.md`.
+- Assumed: judges land on treasureflow.vercel.app first. Not verified: a judge GitHub account without repo access. Treasury `0x4c9D...a6c2`. No secrets.

@@ -1,5 +1,7 @@
 # Treasury Sweeper PRD v1
 
+> **Historical.** This is the original Dynamic-era PRD. Live product, Vercel click path, and onchain proof: [README.md](README.md).
+
 Runtime NYC hackathon. Written 2026-09-16 for review by a second agent. No code in this document. Deadline Sat Sep 19 2026, 4 PM EDT; demos 5 PM.
 
 **Status**
