@@ -117,7 +117,7 @@ describe("B32 balance and deposit phrasing", () => {
       expect(reply.plan.amount).toBe("5");
       expect(reply.unsignedTx?.to).toBe(BASE.usdc);
       expect(reply.unsignedTx?.data).toBe(encodeTransfer(dest, 5_000_000n));
-      expect(reply.summary).toContain("does not broadcast");
+      expect(reply.summary).toContain("Sign in your wallet");
     }
   });
 

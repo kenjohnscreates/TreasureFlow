@@ -104,7 +104,7 @@ describe("B38 market buy sizing", () => {
     expect(reply.plan.hardStopOk).toBe(true);
     expect(reply.plan.orderType).toBe("market");
     expect(reply.summary).toContain("0.235");
-    expect(reply.summary).toContain("5% slippage");
+    expect(reply.summary).toContain("Confirm to submit");
     expect(reply.summary).not.toMatch(/\u2014|\u2013/);
   });
 

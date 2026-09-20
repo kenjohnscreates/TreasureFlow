@@ -430,3 +430,7 @@ Running build notes. One entry per task.
 ## Hide judge copy on the landing during demo
 
 - Removed the landing-hero judge note and the Runtime-judge FAQ so the recorded demo is pitch + Enter app only. GitHub README still has the judge brief. Caps 15 / 10 / 30 / 15.
+
+## Chip plan copy is product language
+
+- Pay plan is `Send N USDC to 0x…. Confirm to submit.` not dry-run / Chat does not submit. Sweep / LP / dip / market / deposit match that. Typed `limits` points at Limits & Orders. Caps 15 / 10 / 30 / 15.

@@ -146,10 +146,10 @@ describe("Bankr typed-data prompt", () => {
 });
 
 describe("chat limits", () => {
-  it("stays dry and points at the CLI", () => {
+  it("stays a plan and points at Limits & Orders", () => {
     const reply = handleChat("limits", loadConfig());
     expect(reply.plan.action).toBe("limits");
-    expect(reply.summary.includes("Chat does not submit")).toBe(true);
-    expect(reply.summary.includes("pnpm bankr:limits")).toBe(true);
+    expect(reply.summary).toContain("Limits & Orders");
+    expect(reply.summary).not.toContain("pnpm");
   });
 });

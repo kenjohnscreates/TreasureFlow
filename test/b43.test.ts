@@ -86,7 +86,7 @@ describe("B43 buy-the-dip Flash limit from chat", () => {
       demoFlashLimitPrice(76613, DEMO_DIP_PCT_BELOW).toFixed(2),
     );
     expect(reply.summary).toContain(`${DEMO_DIP_PCT_BELOW}% below spot`);
-    expect(reply.summary).toContain("Fills only if spot drops");
+    expect(reply.summary).toContain("Confirm to submit");
     expect(wouldSubmitChat(reply)).toBe(true);
   });
 

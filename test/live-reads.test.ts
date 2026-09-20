@@ -82,8 +82,8 @@ describe("chat still dry on a live snapshot", () => {
     expect(reply.kind).toBe("pay");
     expect(reply.plan.action).toBe("pay");
     expect(reply.plan.sent).toBe(false);
-    expect(reply.summary).toContain("Chat does not submit");
-    expect(reply.summary).toContain("not sent");
+    expect(reply.summary).toContain("Send 8 USDC");
+    expect(reply.summary).toContain("Confirm to submit");
   });
 
   it("rejects Send 50 on a live snapshot", () => {

@@ -75,9 +75,9 @@ function treasuryLabel(config: AppConfig, opts: ChatOpts): string | null {
 
 function lpStocksCopy(tokenId?: string): string {
   if (tokenId) {
-    return `Add $${DEMO_LP_USD} to Slipstream NFT #${tokenId}. Confirm to submit. Notional under 15 USDC. Not the nightly USDC/USDT sweep.`;
+    return `Add $${DEMO_LP_USD} to Slipstream NFT #${tokenId}. Confirm to submit.`;
   }
-  return `Slipstream NVDAc LP. Confirm to mint. Notional under 15 USDC. Not the nightly USDC/USDT sweep.`;
+  return `Open a Slipstream NVDAc position. Confirm to submit.`;
 }
 
 function lpStocksPlan(config: AppConfig, opts: ChatOpts): ChatReply {
@@ -118,8 +118,7 @@ function depositPlan(intent: DepositIntent, config: AppConfig): ChatReply {
   };
   return {
     kind: "deposit",
-    summary:
-      "Unsigned ERC-20 transfer to the Bankr treasury. Sign from the external wallet. Agent does not broadcast.",
+    summary: `Deposit ${formatUnits(intent.amount, decimals)} ${intent.token} to the company treasury. Sign in your wallet.`,
     plan: {
       action: "deposit",
       token: intent.token,
@@ -138,7 +137,7 @@ function sweepPlan(config: AppConfig, opts: ChatOpts): ChatReply {
   if (!snapshot) {
     return {
       kind: "sweep",
-      summary: `${MISSING_LIVE} Confirm will noop.`,
+      summary: MISSING_LIVE,
       plan: {
         action: "noop",
         reason: "no_live_snapshot",
@@ -155,8 +154,8 @@ function sweepPlan(config: AppConfig, opts: ChatOpts): ChatReply {
       kind: "sweep",
       summary:
         plan.action === "add_liquidity"
-          ? "Sweep plan. Confirm with write key and founder signature to submit."
-          : "Nothing to sweep. Confirm will noop. Does not invent USDC.",
+          ? "Sweep extra cash into USDC/USDT. Confirm to submit."
+          : "Nothing to sweep. Need at least 5 USDC above the 15 buffer, and matching USDT.",
       plan: serializeSweep(plan),
     };
   } catch (err) {
@@ -287,7 +286,9 @@ function payPlan(raw: string, config: AppConfig, opts: ChatOpts): ChatReply {
     return {
       kind: "pay",
       summary:
-        "Dry-run pay plan. Chat does not submit. Bankr transfer not sent from chat.",
+        plan.action === "unwind_and_pay"
+          ? `Send ${formatUnits(plan.amountUsdc, USDC_DECIMALS)} USDC to ${truncateAddress(plan.to)}. Unwind LP for the shortfall. Confirm to submit.`
+          : `Send ${formatUnits(plan.amountUsdc, USDC_DECIMALS)} USDC to ${truncateAddress(plan.to)}. Confirm to submit.`,
       plan: serializePay(plan),
     };
   } catch (err) {
@@ -296,8 +297,7 @@ function payPlan(raw: string, config: AppConfig, opts: ChatOpts): ChatReply {
   }
 }
 
-const LIMITS_REASON =
-  "Dry Flash limit ladder. Chat does not submit. Live is pnpm bankr:limits.";
+const LIMITS_REASON = "The buy-the-dip ladder is on Limits & Orders.";
 
 function limitsPlan(opts: ChatOpts): ChatReply {
   const rungs = buildLimitLadder({
@@ -317,12 +317,12 @@ function limitsPlan(opts: ChatOpts): ChatReply {
 }
 
 function demoFlashCopy(qtyUsdc: string): string {
-  return `Market buy cbBTC. Spend ${qtyUsdc} USDC. 5% slippage. This is a market order. Does not promise a fill. Confirm to place.`;
+  return `Market buy cbBTC. Spend ${qtyUsdc} USDC. Confirm to submit.`;
 }
 
 function dipFlashCopy(qtyUsdc: string, limitPriceUsd: string): string {
   const limit = limitPriceUsd ? ` Limit $${limitPriceUsd}/cbBTC.` : "";
-  return `Buy-the-dip limit for cbBTC. Spend ${qtyUsdc} USDC. ${DEMO_DIP_PCT_BELOW}% below spot.${limit} Fills only if spot drops to that limit. Does not promise a fill. Confirm to place.`;
+  return `Buy-the-dip limit for cbBTC. Spend ${qtyUsdc} USDC. ${DEMO_DIP_PCT_BELOW}% below spot.${limit} Confirm to submit.`;
 }
 
 function dipFlashPlan(config: AppConfig, opts: ChatOpts): ChatReply {
@@ -353,7 +353,7 @@ function dipFlashPlan(config: AppConfig, opts: ChatOpts): ChatReply {
   if (!snapshot) {
     return {
       kind: "dip_flash",
-      summary: `${MISSING_LIVE} Confirm will noop.`,
+      summary: MISSING_LIVE,
       plan: {
         ...plan,
         qtyUsdc: formatUnits(DEMO_FLASH_USDC, USDC_DECIMALS),
@@ -364,7 +364,7 @@ function dipFlashPlan(config: AppConfig, opts: ChatOpts): ChatReply {
   if (spendUsdc <= 0n) {
     return {
       kind: "dip_flash",
-      summary: `Not enough USDC for a buy-the-dip cbBTC limit (need at least ${formatUnits(DEMO_FLASH_MIN_USDC, USDC_DECIMALS)}). Confirm will noop.`,
+      summary: `Not enough USDC for a buy-the-dip cbBTC limit (need at least ${formatUnits(DEMO_FLASH_MIN_USDC, USDC_DECIMALS)}).`,
       plan: { ...plan, reason: snapshot.usdcFree <= 0n ? "no free USDC" : "insufficient_usdc" },
     };
   }
@@ -400,7 +400,7 @@ function demoFlashPlan(config: AppConfig, opts: ChatOpts): ChatReply {
   if (!snapshot) {
     return {
       kind: "demo_flash",
-      summary: `${MISSING_LIVE} Confirm will noop.`,
+      summary: MISSING_LIVE,
       plan: {
         ...plan,
         qtyUsdc: formatUnits(DEMO_FLASH_USDC, USDC_DECIMALS),
@@ -411,7 +411,7 @@ function demoFlashPlan(config: AppConfig, opts: ChatOpts): ChatReply {
   if (spendUsdc <= 0n) {
     return {
       kind: "demo_flash",
-      summary: `Not enough USDC for a market buy of cbBTC (need at least ${formatUnits(DEMO_FLASH_MIN_USDC, USDC_DECIMALS)}). Confirm will noop.`,
+      summary: `Not enough USDC for a market buy of cbBTC (need at least ${formatUnits(DEMO_FLASH_MIN_USDC, USDC_DECIMALS)}).`,
       plan: { ...plan, reason: snapshot.usdcFree <= 0n ? "no free USDC" : "insufficient_usdc" },
     };
   }

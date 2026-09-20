@@ -148,6 +148,6 @@ describe("handleChat", () => {
     expect(sweep.plan.sent).toBe(false);
     const limits = handleChat("limits", config);
     expect(limits.plan.action).toBe("limits");
-    expect(limits.summary.includes("Chat does not submit")).toBe(true);
+    expect(limits.summary).toContain("Limits & Orders");
   });
 });

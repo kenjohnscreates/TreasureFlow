@@ -29,7 +29,7 @@ describe("B2 prompt-to-pay orchestrator", () => {
     expect(reply.plan.action).toBe("pay");
     expect(reply.plan.sent).toBe(false);
     expect(reply.plan.amountUsdc).toBe("8");
-    expect(reply.summary).toContain("not sent");
+    expect(reply.summary).toContain("Confirm to submit");
   });
 
   it("rejects a dest that is not PAY_DEST", () => {
@@ -172,7 +172,8 @@ describe("B14 unwind_and_pay submit", () => {
     expect(reply.plan.action).toBe("unwind_and_pay");
     expect(reply.plan.sent).toBe(false);
     expect(reply.plan.shortfallUsdc).toBe("5");
-    expect(reply.summary).toContain("not sent");
+    expect(reply.summary).toContain("Confirm to submit");
+    expect(reply.summary).toContain("Unwind LP");
   });
 
   it("submits LP approve+remove then transferUsdc", async () => {
