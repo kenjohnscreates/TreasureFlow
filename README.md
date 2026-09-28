@@ -208,3 +208,10 @@ pnpm bankr:limits -- --live
 | [PUNCH-LIST.md](PUNCH-LIST.md) | Historical Dynamic-era checklist. Not live |
 | [PRD.md](PRD.md) / [BUILD-PLAN.md](BUILD-PLAN.md) | Original process docs. Do not treat as live UI |
 | [docs/](docs/) | Fetched vendor pages. Implementation in `src/` wins |
+
+## License
+
+[MIT](LICENSE), except third-party material:
+
+- `vendor/aero-stock-lp/` is copied from [BankrBot/skills](https://github.com/BankrBot/skills/tree/main/aero-stock-lp) at the SHA in `vendor/aero-stock-lp/PINNED_SHA`. That repo has no license, so the MIT grant does not cover it.
+- `docs/` holds pages fetched from vendor sites for reference. They belong to their publishers.

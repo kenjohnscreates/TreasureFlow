@@ -2,6 +2,7 @@
   "name": "treasureflow",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Policy-governed USDC treasury agent for Runtime NYC hackathon",
   "type": "module",
   "scripts": {
